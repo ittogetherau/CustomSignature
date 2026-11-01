@@ -44,6 +44,14 @@ export default function Editor() {
   const [install, setInstall] = useState(false)
   const [code, setCode] = useState(false)
   const lastSaved = useRef(JSON.stringify(original))
+  // Deep links load before the workspace data does — adopt the signature once it arrives.
+  useEffect(() => {
+    if (!sig && original) {
+      lastSaved.current = JSON.stringify(original)
+      setSig(original)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [original])
 
   // autosave: debounce edits back into the store
   useEffect(() => {
@@ -83,6 +91,9 @@ export default function Editor() {
   }, [sig, motionBusy])
 
   const html = useMemo(() => (sig ? renderSignature(sig, { campaigns: store.campaigns }) : ''), [sig, store.campaigns])
+
+  if (!sig && store.loading)
+    return <div className="flex h-screen items-center justify-center gap-3 text-sm text-muted"><Loader2 size={16} className="animate-spin" /> Opening signature…</div>
 
   if (!sig)
     return (
