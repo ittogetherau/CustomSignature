@@ -16,14 +16,35 @@ const NAV = [
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
-export function Logo({ light = false }: { light?: boolean }) {
+/** IT Together monogram — the triangular "A" mark, redrawn as a crisp vector. */
+export function ITTogetherMark({ size = 16, color = '#1a6ad8' }: { size?: number; color?: string }) {
+  return (
+    <svg width={size} height={size * 0.82} viewBox="0 0 100 82" aria-hidden fill="none" stroke={color} strokeWidth="10" strokeLinejoin="miter" strokeLinecap="butt">
+      <path d="M50 6 L95 77 L62 77" />
+      <path d="M41 21 L60 48 L44 71" />
+      <path d="M30 38 L8 77 L28 77" />
+    </svg>
+  )
+}
+
+/** Product lockup: Inkwell, by IT Together. */
+export function Logo({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
+  const itBlue = light ? '#7fb2ff' : '#1a6ad8'
   return (
     <div className="flex items-center gap-2.5">
-      <svg width="30" height="30" viewBox="0 0 32 32" aria-hidden>
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden className="shrink-0">
         <rect width="32" height="32" rx="8" fill={light ? '#f6f2ea' : '#1c1917'} />
         <path d="M7 22c3 0 4-10 7-10s1 8 4 8 3-5 7-5" stroke="#e2643b" strokeWidth="2.6" fill="none" strokeLinecap="round" />
       </svg>
-      <span className={clsx('h-display text-[22px] leading-none', light ? 'text-paper' : 'text-ink')}>Inkwell</span>
+      <span className="flex flex-col leading-none">
+        <span className={clsx('h-display text-[21px] leading-none', light ? 'text-paper' : 'text-ink')}>Inkwell</span>
+        {!compact && (
+          <span className={clsx('mt-1 flex items-center gap-1 text-[11.5px] font-semibold tracking-wide', light ? 'text-paper/55' : 'text-muted')}>
+            by <ITTogetherMark size={14} color={itBlue} />
+            <span style={{ color: itBlue }} className="font-bold">IT<span className="font-semibold italic">together</span></span>
+          </span>
+        )}
+      </span>
     </div>
   )
 }

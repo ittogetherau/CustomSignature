@@ -222,9 +222,9 @@ function ctaButton(c: Ctx, bg: string, fg = '#ffffff', square = false) {
   return `<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td bgcolor="${bg}" style="border-radius:${square ? 4 : 999}px;background:${bg};"><a href="${esc(url(cta.url))}" class="${c.anim ? 'sc-nav' : ''}" style="display:inline-block;padding:8px 18px;font-family:${c.font};font-size:${c.base}px;font-weight:700;color:${fg};text-decoration:none;border-radius:${square ? 4 : 999}px;">${esc(cta.label)} &rarr;</a></td></tr></table>`
 }
 
-export function bannerHtml(b: Campaign, font: string, anim: boolean, width = 520) {
-  if (b.style === 'image' && b.image)
-    return `<a href="${esc(url(b.url))}" style="display:block;text-decoration:none;"><img src="${esc(b.image)}" width="${width}" alt="${esc(b.headline)}" style="display:block;width:100%;max-width:${width}px;height:auto;border:0;border-radius:10px;" /></a>`
+export function bannerHtml(b: Campaign, font: string, anim: boolean, width = 600) {
+  if ((b.style === 'image' || b.style === 'designed') && b.image)
+    return `<a href="${esc(url(b.url))}" style="display:block;text-decoration:none;"><img src="${esc(b.image)}" width="${width}" alt="${esc(b.headline)}" style="display:block;width:100%;max-width:${width}px;height:auto;border:0;border-radius:12px;" /></a>`
   const dark = b.style !== 'light'
   const bg = b.style === 'dark' ? '#0f172a' : b.style === 'light' ? tint(b.from, 0.9) : b.from
   const bgImg = b.style === 'gradient' ? `background-image:linear-gradient(120deg,${b.from},${b.to});` : b.style === 'dark' ? `background-image:linear-gradient(120deg,#0f172a,${b.from});` : ''
@@ -239,7 +239,7 @@ ${b.ctaLabel ? `<td valign="middle" align="right" style="padding-left:12px;white
 </tr></table></td></tr></table>`
 }
 
-function banner(c: Ctx, width = 520) {
+function banner(c: Ctx, width = 600) {
   return c.campaign ? `<tr><td style="padding-top:14px;">${bannerHtml(c.campaign, c.font, c.anim, width)}</td></tr>` : ''
 }
 
@@ -721,7 +721,7 @@ function classic(c: Ctx, r: ClassicRecipe) {
   const disc = c.s.extras.disclaimer
     ? `<tr><td style="padding-top:12px;"><div style="border-top:1px solid #e4e5e7;padding-top:8px;font-family:${c.font};font-size:${Math.max(9, c.base - 3)}px;line-height:1.55;color:#80838a;max-width:560px;">${esc(c.s.extras.disclaimer)}</div></td></tr>`
     : ''
-  return wrap(c, body + banner(c, 560) + disc, 'max-width:600px;')
+  return wrap(c, body + banner(c, 600) + disc, "max-width:600px;")
 }
 
 for (const r of CLASSIC) T[r.id] = (c) => classic(c, r)

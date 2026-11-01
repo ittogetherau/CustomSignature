@@ -95,13 +95,25 @@ export interface Campaign {
   ctaLabel: string
   url: string
   image: string
-  style: 'gradient' | 'dark' | 'light' | 'image'
+  style: 'gradient' | 'dark' | 'light' | 'image' | 'designed'
   from: string
   to: string
   start: string
   end: string
   departments: string[]
   active: boolean
+  /** Banner-studio settings; the rendered result lives in `image`. */
+  design?: BannerDesign
+  imageKey?: string
+}
+
+export interface BannerDesign {
+  template: string
+  eyebrow: string
+  date: string
+  accent: string
+  showLogo: boolean
+  animated: boolean
 }
 
 export type Role = 'owner' | 'admin' | 'member'
