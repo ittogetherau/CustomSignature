@@ -26,6 +26,7 @@ export default function Campaigns() {
   const { campaigns, saveCampaign, deleteCampaign, employees } = useStore()
   const toast = useToast()
   const [edit, setEdit] = useState<Campaign | null>(null)
+  const [confirmDelete, setConfirmDelete] = useState<Campaign | null>(null)
 
   const blank = (): Campaign => ({ id: uid(), name: 'New campaign', headline: 'Your headline goes here', subline: 'A short supporting line', ctaLabel: 'Learn more', url: '', image: '', style: 'gradient', from: '#e2643b', to: '#f3a55b', start: today(), end: plus(14), departments: [], active: true })
 
@@ -57,7 +58,7 @@ export default function Campaigns() {
                     <div className="flex gap-1">
                       <button className="btn btn-ghost btn-sm btn-icon" aria-label={c.active ? 'Pause' : 'Resume'} onClick={() => { saveCampaign({ ...c, active: !c.active }); toast(c.active ? 'Campaign paused' : 'Campaign live') }}>{c.active ? <Pause size={15} /> : <Play size={15} />}</button>
                       <button className="btn btn-ghost btn-sm btn-icon" aria-label="Edit" onClick={() => setEdit(c)}><Pencil size={15} /></button>
-                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Delete" onClick={() => { deleteCampaign(c.id); toast('Campaign deleted') }}><Trash2 size={15} /></button>
+                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Delete" onClick={() => setConfirmDelete(c)}><Trash2 size={15} /></button>
                     </div>
                   </div>
                 </div>
@@ -66,6 +67,12 @@ export default function Campaigns() {
           })}
         </div>
       )}
+
+      <Modal open={!!confirmDelete} onClose={() => setConfirmDelete(null)} width={460} title="Delete this campaign?"
+        subtitle={confirmDelete?.active ? 'It is live — its banner will disappear from signatures copied or sent from now on.' : 'This permanently removes the campaign.'}
+        footer={<><button className="btn btn-line" onClick={() => setConfirmDelete(null)}>Cancel</button><button className="btn bg-[#b91c1c] text-white hover:bg-[#991b1b]" onClick={() => { if (confirmDelete) { deleteCampaign(confirmDelete.id); toast('Campaign deleted') } setConfirmDelete(null) }}>Delete campaign</button></>}>
+        <p className="text-sm text-muted">“{confirmDelete?.name}” will be deleted. Tip: use pause instead if you might run it again.</p>
+      </Modal>
 
       {edit && <CampaignEditor value={edit} onClose={() => setEdit(null)} onSave={(c) => { saveCampaign(c); setEdit(null); toast('Campaign saved') }} />}
     </>
