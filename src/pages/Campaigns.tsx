@@ -136,7 +136,7 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
       const logoUrl = bannerLogo(tpl, brand).url
       const logo = c.design.showLogo && logoUrl ? await loadImage(logoUrl).catch(() => null) : null
       const data = bannerData(c, brand, logo)
-      const key = assetKey([c.design, c.headline, c.subline, c.ctaLabel, c.from, c.to, c.design.showLogo ? logoUrl : ''])
+      const key = assetKey(['layout2', c.design, c.headline, c.subline, c.ctaLabel, c.from, c.to, c.design.showLogo ? logoUrl : ''])
       let image = c.image, imageKey = c.imageKey
       if (key !== c.imageKey || !c.image) {
         const blob = c.design.animated && tpl.animated ? bannerGif(tpl, data) : await bannerJpeg(tpl, data)
@@ -195,6 +195,12 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
             <ColorInput label="Background from" value={c.from} onChange={(v) => set('from', v)} />
             <ColorInput label="Background to" value={c.to} onChange={(v) => set('to', v)} />
             <ColorInput label="Button & accent" value={c.design.accent} onChange={(v) => setDesign({ accent: v })} />
+            <div><span className="field-label">Button shape</span>
+              <Choice value={c.design.ctaShape ?? 'pill'} onChange={(v) => setDesign({ ctaShape: v })} options={[['pill', 'Pill'], ['rounded', 'Rounded'], ['square', 'Rectangle']]} />
+            </div>
+            <div><span className="field-label">Button size</span>
+              <Choice value={c.design.ctaSize ?? 'md'} onChange={(v) => setDesign({ ctaSize: v })} options={[['sm', 'Small'], ['md', 'Medium'], ['lg', 'Large']]} />
+            </div>
             <div className="space-y-2 pt-[22px]">
               <Toggle on={c.design.showLogo} onChange={(v) => setDesign({ showLogo: v })} label="Show my logo" desc={brand.logo ? 'From your brand kit' : 'Add a logo in Brand kit first'} />
               {tpl?.animated && <Toggle on={c.design.animated} onChange={(v) => setDesign({ animated: v })} label="Animate" desc="Looping GIF — first frame is the full design" />}
@@ -247,6 +253,16 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
 }
 
 /** The logo variation that reads best on this design, and whether it needs a white chip. */
+function Choice<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: [T, string][] }) {
+  return (
+    <div className="flex rounded-xl border border-line bg-paper p-1">
+      {options.map(([v, label]) => (
+        <button key={v} type="button" onClick={() => onChange(v)} className={clsx('flex-1 rounded-lg px-2 py-1.5 text-xs font-semibold transition', value === v ? 'bg-white text-ink shadow-sm' : 'text-muted hover:text-ink')}>{label}</button>
+      ))}
+    </div>
+  )
+}
+
 function bannerLogo(tpl: BannerTemplate | undefined, brand: ReturnType<typeof useStore>['brand']) {
   if (!tpl) return { url: brand.logo, chip: true }
   if (tpl.ink === 'light') return brand.logoLight ? { url: brand.logoLight, chip: false } : { url: brand.logo, chip: true }
@@ -255,7 +271,7 @@ function bannerLogo(tpl: BannerTemplate | undefined, brand: ReturnType<typeof us
 
 function bannerData(c: Campaign, brand: ReturnType<typeof useStore>['brand'], logo: HTMLImageElement | null): BannerData {
   const chip = bannerLogo(bannerTemplate(c.design?.template), brand).chip
-  return { headline: c.headline, subline: c.subline, cta: c.ctaLabel, eyebrow: c.design?.eyebrow ?? '', date: c.design?.date ?? '', from: c.from, to: c.to, accent: c.design?.accent ?? '#ffffff', logo, logoChip: chip, company: brand.company }
+  return { headline: c.headline, subline: c.subline, cta: c.ctaLabel, eyebrow: c.design?.eyebrow ?? '', date: c.design?.date ?? '', from: c.from, to: c.to, accent: c.design?.accent ?? '#ffffff', logo, logoChip: chip, ctaShape: c.design?.ctaShape ?? 'pill', ctaSize: c.design?.ctaSize ?? 'md', company: brand.company }
 }
 
 /** Live canvas preview; animates when the design's animation is on. */

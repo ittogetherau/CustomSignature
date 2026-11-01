@@ -116,6 +116,9 @@ export interface BannerDesign {
   accent: string
   showLogo: boolean
   animated: boolean
+  /** Button corners: pill (default), rounded or square. */
+  ctaShape?: 'pill' | 'rounded' | 'square'
+  ctaSize?: 'sm' | 'md' | 'lg'
 }
 
 export type Role = 'owner' | 'admin' | 'member'

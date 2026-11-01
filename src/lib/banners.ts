@@ -20,7 +20,18 @@ export interface BannerData {
   logo: HTMLImageElement | null
   /** Draw the logo on a white chip (primary logo on a dark design). */
   logoChip?: boolean
+  /** Button corners and size. */
+  ctaShape?: CtaShape
+  ctaSize?: CtaSize
   company: string
+}
+
+export type CtaShape = 'pill' | 'rounded' | 'square'
+export type CtaSize = 'sm' | 'md' | 'lg'
+const CTA_SIZES: Record<CtaSize, { font: number; h: number; pad: number }> = {
+  sm: { font: 11, h: 26, pad: 12 },
+  md: { font: 12, h: 30, pad: 14 },
+  lg: { font: 13.5, h: 36, pad: 18 },
 }
 
 export interface BannerTemplate {
@@ -179,77 +190,86 @@ function drawCopy(g: Painter, d: BannerData, tpl: BannerTemplate, x = 28) {
   const ink = tpl.ink === 'light' ? '#ffffff' : '#14110f'
   const soft = tpl.ink === 'light' ? 'rgba(255,255,255,0.78)' : 'rgba(20,17,15,0.68)'
   const maxW = tpl.textW ?? 320
-  let y = 24
-
-  if (d.logo) {
-    const h = 22, w = Math.min(120, (d.logo.width / d.logo.height) * h)
-    c.save()
-    if (d.logoChip !== false) { c.fillStyle = 'rgba(255,255,255,0.94)'; c.beginPath(); c.roundRect(x - 6, y - 5, w + 12, h + 10, 8); c.fill() }
-    c.drawImage(d.logo, x, y, w, h)
-    c.restore()
-    y += h + 16
-  } else y += 4
-
-  if (d.eyebrow) {
-    c.font = `700 9.5px ${SANS}`
-    const label = d.eyebrow.toUpperCase()
-    const w = c.measureText(label).width + c.measureText(' ').width * label.length * 0.2 + 18
-    c.fillStyle = tpl.ink === 'light' ? 'rgba(255,255,255,0.16)' : rgba(d.accent, 0.14)
-    c.beginPath(); c.roundRect(x, y, w, 19, 10); c.fill()
-    c.fillStyle = tpl.ink === 'light' ? '#ffffff' : mix(d.accent, '#000000', 0.25)
-    c.textBaseline = 'middle'
-    // letter-spaced eyebrow
-    let cx = x + 9
-    for (const ch of label) { c.fillText(ch, cx, y + 10); cx += c.measureText(ch).width + 1.1 }
-    y += 27
-  }
-
-  // Headline: two lines max, shrinking to fit.
   const family = tpl.font === 'serif' ? SERIF : SANS
   const weight = tpl.font === 'serif' ? 600 : 800
-  let size = d.logo ? 23 : 26
-  let fitted = { lines: [d.headline], overflow: false }
-  for (; size >= 16; size -= 1) {
+  const btn = CTA_SIZES[d.ctaSize ?? 'md']
+  const PAD = 20, GAP = 10
+
+  // Measure every block first, then shrink until the stack fits and centre it vertically,
+  // so nothing (especially the button) ever overlaps the copy.
+  const plan = (logoH: number, size: number, subLines: number) => {
     c.font = `${weight} ${size}px ${family}`
-    fitted = wrap(c, d.headline, maxW, 2)
-    if (!fitted.overflow) break
-  }
-  c.fillStyle = ink
-  c.textBaseline = 'alphabetic'
-  fitted.lines.forEach((l, i) => c.fillText(l, x, y + size * 0.92 + i * size * 1.08))
-  y += size * 1.08 * fitted.lines.length + 6
-
-  if (d.subline) {
+    const head = wrap(c, d.headline, maxW, 2)
     c.font = `500 12px ${SANS}`
-    c.fillStyle = soft
-    const s = wrap(c, d.subline, maxW, d.logo ? 1 : 2)
-    s.lines.forEach((l, i) => c.fillText(l, x, y + 11 + i * 15))
-    y += 15 * s.lines.length + 6
+    const sub = d.subline ? wrap(c, d.subline, maxW, subLines) : { lines: [], overflow: false }
+    const parts: [string, number][] = []
+    if (d.logo) parts.push(['logo', logoH])
+    if (d.eyebrow) parts.push(['eyebrow', 19])
+    parts.push(['head', size * 1.1 * head.lines.length])
+    if (sub.lines.length) parts.push(['sub', 15 * sub.lines.length])
+    if (d.date) parts.push(['date', 14])
+    if (d.cta) parts.push(['cta', btn.h])
+    const gap = (k: string) => (k === 'sub' ? 4 : k === 'cta' ? GAP + 2 : GAP)
+    const total = parts.reduce((n, [k, h], i) => n + h + (i ? gap(k) : 0), 0)
+    return { size, head, sub, parts, gap, total, logoH, fits: !head.overflow && total <= BH - PAD * 2 }
+  }
+  let L = plan(22, 26, 2)
+  outer: for (const logoH of [22, 18]) for (const subLines of [2, 1]) for (let size = 26; size >= 15; size--) {
+    L = plan(logoH, size, subLines)
+    if (L.fits) break outer
   }
 
-  if (d.date) {
-    c.font = `700 11px ${SANS}`
-    c.fillStyle = ink
-    g.icon('Calendar', x, y + 1, 12, ink, 2.2)
-    c.fillText(d.date, x + 17, y + 11)
-    y += 18
-  }
-
-  if (d.cta) {
-    c.font = `700 12px ${SANS}`
-    const label = `${d.cta}  →`
-    const w = c.measureText(label).width + 28
-    const by = Math.min(y + 4, BH - 40)
-    c.save()
-    c.shadowColor = 'rgba(0,0,0,0.18)'; c.shadowBlur = 8; c.shadowOffsetY = 2
-    c.fillStyle = d.accent
-    c.beginPath(); c.roundRect(x, by, w, 30, 15); c.fill()
-    c.restore()
-    c.fillStyle = onColor(d.accent)
-    c.textBaseline = 'middle'
-    c.fillText(label, x + 14, by + 15.5)
-    c.textBaseline = 'alphabetic'
-  }
+  let y = Math.max(PAD - 4, (BH - L.total) / 2)
+  L.parts.forEach(([k, h], i) => {
+    if (i) y += L.gap(k)
+    if (k === 'logo' && d.logo) {
+      const w = Math.min(120, (d.logo.width / d.logo.height) * h)
+      c.save()
+      if (d.logoChip !== false) { c.fillStyle = 'rgba(255,255,255,0.94)'; c.beginPath(); c.roundRect(x - 6, y - 4, w + 12, h + 8, 8); c.fill() }
+      c.drawImage(d.logo, x, y, w, h)
+      c.restore()
+    } else if (k === 'eyebrow') {
+      c.font = `700 9.5px ${SANS}`
+      const label = d.eyebrow.toUpperCase()
+      let w = 18
+      for (const ch of label) w += c.measureText(ch).width + 1.1
+      c.fillStyle = tpl.ink === 'light' ? 'rgba(255,255,255,0.16)' : rgba(d.accent, 0.14)
+      c.beginPath(); c.roundRect(x, y, w - 1.1, 19, 10); c.fill()
+      c.fillStyle = tpl.ink === 'light' ? '#ffffff' : mix(d.accent, '#000000', 0.25)
+      c.textBaseline = 'middle'
+      let cx = x + 9
+      for (const ch of label) { c.fillText(ch, cx, y + 10); cx += c.measureText(ch).width + 1.1 }
+      c.textBaseline = 'alphabetic'
+    } else if (k === 'head') {
+      c.font = `${weight} ${L.size}px ${family}`
+      c.fillStyle = ink
+      L.head.lines.forEach((l, j) => c.fillText(l, x, y + L.size * 0.86 + j * L.size * 1.1))
+    } else if (k === 'sub') {
+      c.font = `500 12px ${SANS}`
+      c.fillStyle = soft
+      L.sub.lines.forEach((l, j) => c.fillText(l, x, y + 11 + j * 15))
+    } else if (k === 'date') {
+      c.font = `700 11px ${SANS}`
+      c.fillStyle = ink
+      g.icon('Calendar', x, y + 1, 12, ink, 2.2)
+      c.fillText(d.date, x + 17, y + 11)
+    } else if (k === 'cta') {
+      c.font = `700 ${btn.font}px ${SANS}`
+      const label = `${d.cta}  →`
+      const w = c.measureText(label).width + btn.pad * 2
+      const r = d.ctaShape === 'square' ? 2 : d.ctaShape === 'rounded' ? 7 : btn.h / 2
+      c.save()
+      c.shadowColor = 'rgba(0,0,0,0.18)'; c.shadowBlur = 8; c.shadowOffsetY = 2
+      c.fillStyle = d.accent
+      c.beginPath(); c.roundRect(x, y, w, btn.h, r); c.fill()
+      c.restore()
+      c.fillStyle = onColor(d.accent)
+      c.textBaseline = 'middle'
+      c.fillText(label, x + btn.pad, y + btn.h / 2 + 0.5)
+      c.textBaseline = 'alphabetic'
+    }
+    y += h
+  })
 }
 
 // ---------- illustration helpers ----------
