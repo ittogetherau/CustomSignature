@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { Check, Copy, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UserPlus, Wand2, Eye } from 'lucide-react'
+import { Check, Copy, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UserPlus, Wand2, Eye, Send } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
 import type { Employee, Signature } from '../types'
@@ -9,6 +9,7 @@ import { exportDocument, renderSignature } from '../lib/render'
 import { copyRich, download, parseCsv, timeAgo } from '../lib/io'
 import { Avatar, Field, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
 import MicrosoftConnect from '../components/MicrosoftImport'
+import SendSignatures, { takePendingSend, type PendingSend } from '../components/SendSignatures'
 import { MicrosoftLogo } from './Auth'
 
 const STATUS: Record<Employee['status'], { label: string; cls: string }> = {
@@ -46,11 +47,23 @@ export default function Team() {
   const [msOpen, setMsOpen] = useState(params.get('import') === 'microsoft' || params.get('connect') === 'microsoft')
   useEffect(() => {
     // ?import=… deep links (dashboard buttons, the Microsoft OAuth return) open the matching dialog once.
-    if (params.get('import') || params.get('connect')) { params.delete('import'); params.delete('connect'); setParams(params, { replace: true }) }
+    if (params.get('import') || params.get('connect') || params.get('send')) { params.delete('import'); params.delete('connect'); params.delete('send'); setParams(params, { replace: true }) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [addOpen, setAddOpen] = useState(false)
   const [view, setView] = useState<Employee | null>(null)
+
+  // Send via email. ?send=resume = back from the Microsoft "send as me" permission screen.
+  const [sendIds, setSendIds] = useState<string[] | null>(null)
+  const [resume, setResume] = useState<PendingSend | null>(null)
+  const resumeRequested = useRef(params.get('send') === 'resume')
+  useEffect(() => {
+    if (!resumeRequested.current || store.loading) return
+    resumeRequested.current = false
+    const pending = takePendingSend()
+    if (pending) { setResume(pending); setSendIds(pending.ids) }
+  }, [store.loading])
+  const openSend = (ids: string[]) => { setResume(null); setSendIds(ids) }
 
   const depts = useMemo(() => ['All', ...new Set(employees.map((e) => e.department).filter(Boolean))], [employees])
   const list = employees.filter((e) => (dept === 'All' || e.department === dept) && `${e.fullName} ${e.email} ${e.title}`.toLowerCase().includes(q.toLowerCase()))
@@ -119,7 +132,8 @@ export default function Team() {
               <option value="" disabled>Choose…</option>
               {TEMPLATES.map((t) => <option key={t.id} value={t.id} className="text-ink">{t.name}</option>)}
             </select>
-            <button className="btn btn-sm ml-auto text-paper/80 hover:bg-paper/10" onClick={() => { store.deleteEmployees(sel); toast(`Removed ${sel.length}`); setSel([]) }}><Trash2 size={14} /> Remove</button>
+            <button className="btn btn-clay btn-sm ml-auto" onClick={() => openSend(sel)}><Send size={14} /> Send via email</button>
+            <button className="btn btn-sm text-paper/80 hover:bg-paper/10" onClick={() => { store.deleteEmployees(sel); toast(`Removed ${sel.length}`); setSel([]) }}><Trash2 size={14} /> Remove</button>
           </div>
         )}
 
@@ -153,11 +167,15 @@ export default function Team() {
                       {TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
                     </select>
                   </td>
-                  <td className="py-3"><span className={clsx('tag', STATUS[e.status].cls)}>{STATUS[e.status].label}</span></td>
+                  <td className="py-3">
+                    <span className={clsx('tag', STATUS[e.status].cls)}>{STATUS[e.status].label}</span>
+                    {e.sentAt && <div className="mt-1 flex items-center gap-1 text-[11px] text-muted"><Send size={10} /> Sent {timeAgo(e.sentAt)}</div>}
+                  </td>
                   <td className="py-3 text-xs text-muted">{timeAgo(e.updatedAt)}</td>
                   <td className="py-3 pr-4 text-right">
                     <div className="flex justify-end gap-1 opacity-60 transition group-hover:opacity-100">
                       <button className="btn btn-ghost btn-sm" onClick={() => setView(e)}><Eye size={14} /> Preview</button>
+                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Email signature" title="Email signature" onClick={() => openSend([e.id])}><Send size={14} /></button>
                       <button className="btn btn-ghost btn-sm btn-icon" aria-label="Copy" onClick={async () => { try { await copyRich(renderSignature(sigFor(e), { campaigns })); toast(`Copied ${e.fullName.split(' ')[0]}'s signature`) } catch (err) { toast((err as Error).message) } }}><Copy size={14} /></button>
                     </div>
                   </td>
@@ -185,6 +203,10 @@ export default function Team() {
 
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
       <MicrosoftConnect open={msOpen} onClose={() => setMsOpen(false)} />
+      {sendIds && (
+        <SendSignatures open key={resume ? 'resume' : sendIds.join()} people={employees.filter((e) => sendIds.includes(e.id))} sigFor={sigFor} resume={resume}
+          onClose={() => { setSendIds(null); setResume(null); setSel([]) }} />
+      )}
       <AddModal open={addOpen} onClose={() => setAddOpen(false)} />
       <Modal open={!!view} onClose={() => setView(null)} title={view?.fullName ?? ''} subtitle={view ? `${templateById(view.templateId ?? brand.defaultTemplateId).name} · generated from your brand kit` : ''} width={720}
         footer={view && <>

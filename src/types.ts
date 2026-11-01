@@ -82,6 +82,8 @@ export interface Employee {
   status: 'active' | 'invited' | 'outdated'
   source: 'manual' | 'csv' | 'microsoft'
   externalId: string | null
+  /** Last time this person was emailed their signature. */
+  sentAt?: number | null
   updatedAt: number
 }
 

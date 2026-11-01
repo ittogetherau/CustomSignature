@@ -7,7 +7,7 @@ import { useToast } from './components/ui'
 // ---------- row mapping ----------
 
 type SignatureRow = { id: string; org_id: string; label: string; template_id: string; data: Pick<Signature, 'fields' | 'socials' | 'design' | 'extras'>; created_at: string; updated_at: string }
-type EmployeeRow = { id: string; org_id: string; full_name: string; title: string; department: string; email: string; phone: string; photo: string; template_id: string | null; status: Employee['status']; source: Employee['source']; external_id: string | null; updated_at: string }
+type EmployeeRow = { id: string; org_id: string; full_name: string; title: string; department: string; email: string; phone: string; photo: string; template_id: string | null; status: Employee['status']; source: Employee['source']; external_id: string | null; signature_sent_at?: string | null; updated_at: string }
 type CampaignRow = { id: string; org_id: string; data: Omit<Campaign, 'id'> }
 
 const fromSig = (r: SignatureRow): Signature => ({ id: r.id, label: r.label, templateId: r.template_id, ...r.data, createdAt: Date.parse(r.created_at), updatedAt: Date.parse(r.updated_at) })
@@ -16,7 +16,7 @@ const toSig = (s: Signature, orgId: string, ownerId?: string) => ({
   data: { fields: s.fields, socials: s.socials, design: s.design, extras: s.extras },
   ...(ownerId ? { owner_id: ownerId } : {}),
 })
-const fromEmp = (r: EmployeeRow): Employee => ({ id: r.id, fullName: r.full_name, title: r.title, department: r.department, email: r.email, phone: r.phone, photo: r.photo, templateId: r.template_id, status: r.status, source: r.source, externalId: r.external_id, updatedAt: Date.parse(r.updated_at) })
+const fromEmp = (r: EmployeeRow): Employee => ({ id: r.id, fullName: r.full_name, title: r.title, department: r.department, email: r.email, phone: r.phone, photo: r.photo, templateId: r.template_id, status: r.status, source: r.source, externalId: r.external_id, sentAt: r.signature_sent_at ? Date.parse(r.signature_sent_at) : null, updatedAt: Date.parse(r.updated_at) })
 const toEmp = (e: Employee, orgId: string) => ({ id: e.id, org_id: orgId, full_name: e.fullName, title: e.title, department: e.department, email: e.email.toLowerCase(), phone: e.phone, photo: e.photo, template_id: e.templateId, status: e.status, source: e.source, external_id: e.externalId })
 const fromCamp = (r: CampaignRow): Campaign => ({ ...r.data, id: r.id })
 const toCamp = (c: Campaign, orgId: string) => { const { id, ...data } = c; return { id, org_id: orgId, data } }
@@ -45,6 +45,7 @@ interface Store extends State {
   upsertEmployees: (list: Employee[]) => Promise<void>
   updateEmployee: (id: string, patch: Partial<Employee>) => void
   deleteEmployees: (ids: string[]) => void
+  markSent: (ids: string[]) => void
   saveCampaign: (c: Campaign) => void
   deleteCampaign: (id: string) => void
   setBrand: (b: BrandKit) => void
@@ -139,6 +140,11 @@ export function StoreProvider({ org: initialOrg, role, userId, children }: { org
       deleteEmployees: (ids) => {
         patch((s) => ({ employees: s.employees.filter((e) => !ids.includes(e.id)) }))
         write('Removing people', supabase.from('employees').delete().in('id', ids))
+      },
+      markSent: (ids) => {
+        const now = Date.now()
+        patch((s) => ({ employees: s.employees.map((e) => (ids.includes(e.id) ? { ...e, sentAt: now } : e)) }))
+        write('Recording sent signatures', supabase.from('employees').update({ signature_sent_at: new Date(now).toISOString() }).in('id', ids))
       },
       saveCampaign: (c) => {
         patch((s) => ({ campaigns: s.campaigns.some((x) => x.id === c.id) ? s.campaigns.map((x) => (x.id === c.id ? c : x)) : [c, ...s.campaigns] }))
