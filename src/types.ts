@@ -1,0 +1,100 @@
+export type SocialKey = 'linkedin' | 'x' | 'instagram' | 'facebook' | 'youtube' | 'tiktok' | 'github'
+
+export interface NavLink {
+  label: string
+  url: string
+}
+
+export interface SignatureFields {
+  fullName: string
+  title: string
+  department: string
+  company: string
+  pronouns: string
+  phone: string
+  mobile: string
+  email: string
+  website: string
+  address: string
+  photo: string
+  logo: string
+}
+
+export interface SignatureDesign {
+  primary: string
+  accent: string
+  text: string
+  font: string
+  photoShape: 'circle' | 'rounded' | 'square'
+  size: 'sm' | 'md' | 'lg'
+  iconStyle: 'filled' | 'outline' | 'plain'
+}
+
+export interface SignatureExtras {
+  verified: boolean
+  animations: boolean
+  navLinks: NavLink[]
+  cta: NavLink | null
+  campaignId: string | null
+  disclaimer: string
+  quote: string
+}
+
+export interface Signature {
+  id: string
+  label: string
+  templateId: string
+  fields: SignatureFields
+  socials: Partial<Record<SocialKey, string>>
+  design: SignatureDesign
+  extras: SignatureExtras
+  createdAt: number
+  updatedAt: number
+  stats: { impressions: number; clicks: number }
+}
+
+export interface Employee {
+  id: string
+  fullName: string
+  title: string
+  department: string
+  email: string
+  phone: string
+  photo: string
+  templateId: string | null
+  status: 'active' | 'invited' | 'outdated'
+  updatedAt: number
+}
+
+export interface Campaign {
+  id: string
+  name: string
+  headline: string
+  subline: string
+  ctaLabel: string
+  url: string
+  image: string
+  style: 'gradient' | 'dark' | 'light' | 'image'
+  from: string
+  to: string
+  start: string
+  end: string
+  departments: string[]
+  active: boolean
+  impressions: number
+  clicks: number
+}
+
+export interface BrandKit {
+  company: string
+  website: string
+  logo: string
+  primary: string
+  accent: string
+  font: string
+  address: string
+  phone: string
+  disclaimer: string
+  defaultTemplateId: string
+  socials: Partial<Record<SocialKey, string>>
+}
