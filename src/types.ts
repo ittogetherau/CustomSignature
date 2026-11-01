@@ -50,7 +50,6 @@ export interface Signature {
   extras: SignatureExtras
   createdAt: number
   updatedAt: number
-  stats: { impressions: number; clicks: number }
 }
 
 export interface Employee {
@@ -63,6 +62,8 @@ export interface Employee {
   photo: string
   templateId: string | null
   status: 'active' | 'invited' | 'outdated'
+  source: 'manual' | 'csv' | 'microsoft'
+  externalId: string | null
   updatedAt: number
 }
 
@@ -81,8 +82,14 @@ export interface Campaign {
   end: string
   departments: string[]
   active: boolean
-  impressions: number
-  clicks: number
+}
+
+export type Role = 'owner' | 'admin' | 'member'
+
+export interface Organization {
+  id: string
+  name: string
+  msTenantId: string | null
 }
 
 export interface BrandKit {

@@ -8,8 +8,9 @@ import { useStore } from '../store'
 import type { NavLink, Signature, SocialKey } from '../types'
 import { FONTS, SOCIAL_LABEL, exportDocument, renderSignature } from '../lib/render'
 import { TEMPLATES, templateById } from '../lib/templates'
-import { brandColors, copyRich, copyText, download, readImage, slug } from '../lib/io'
+import { brandColors, copyRich, copyText, download, slug } from '../lib/io'
 import EmailPreview from '../components/EmailPreview'
+import { useImageUpload } from '../components/upload'
 import { ColorInput, Empty, Field, Modal, SigThumb, Toggle, useToast } from '../components/ui'
 
 type Tab = 'template' | 'details' | 'images' | 'social' | 'design' | 'extras'
@@ -250,13 +251,16 @@ function TemplatePanel({ sig, onPick, campaigns }: { sig: Signature; onPick: (id
 }
 
 function ImageDrop({ label, value, onChange, round, hint }: { label: string; value: string; onChange: (v: string) => void; round?: boolean; hint: string }) {
-  const toast = useToast()
+  const upload = useImageUpload()
   const input = useRef<HTMLInputElement>(null)
   const [over, setOver] = useState(false)
+  const [busy, setBusy] = useState(false)
   const take = async (f?: File) => {
     if (!f) return
-    if (!f.type.startsWith('image/')) return toast('Please choose an image file')
-    onChange(await readImage(f, round ? 240 : 360))
+    setBusy(true)
+    const url = await upload(f, round ? 'photo' : 'logo', round ? 240 : 360)
+    setBusy(false)
+    if (url) onChange(url)
   }
   return (
     <div>
@@ -272,7 +276,7 @@ function ImageDrop({ label, value, onChange, round, hint }: { label: string; val
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex gap-2">
-            <button className="btn btn-line btn-sm" onClick={() => input.current?.click()}>{value ? 'Replace' : 'Upload'}</button>
+            <button className="btn btn-line btn-sm" disabled={busy} onClick={() => input.current?.click()}>{busy ? <Loader2 size={14} className="animate-spin" /> : value ? 'Replace' : 'Upload'}</button>
             {value && <button className="btn btn-ghost btn-sm btn-icon" onClick={() => onChange('')} aria-label="Remove"><Trash2 size={14} /></button>}
           </div>
           <p className="mt-1.5 text-xs text-muted">{hint}</p>
@@ -285,22 +289,18 @@ function ImageDrop({ label, value, onChange, round, hint }: { label: string; val
 
 function ImagesPanel({ sig, setF, onColors }: { sig: Signature; setF: (k: keyof Signature['fields'], v: string) => void; onColors: (c: string[]) => void }) {
   return (
-    <Section title="Images" desc="Drop files or paste a hosted URL. Hosted URLs work best when sending.">
+    <Section title="Images" desc="Drop a file or paste an image URL. Uploads are hosted for you, so they show up in every mail app.">
       <div className="space-y-5">
         <ImageDrop label="Profile photo" round value={sig.fields.photo} onChange={(v) => setF('photo', v)} hint="Square, at least 200×200" />
-        <Field label="…or photo URL"><input className="input" placeholder="https://" value={sig.fields.photo.startsWith('data:') ? '' : sig.fields.photo} onChange={(e) => setF('photo', e.target.value)} /></Field>
+        <Field label="…or photo URL"><input className="input" placeholder="https://" value={sig.fields.photo} onChange={(e) => setF('photo', e.target.value)} /></Field>
         <ImageDrop label="Company logo" value={sig.fields.logo} onChange={(v) => setF('logo', v)} hint="PNG with transparent background" />
-        <Field label="…or logo URL"><input className="input" placeholder="https://" value={sig.fields.logo.startsWith('data:') ? '' : sig.fields.logo} onChange={(e) => setF('logo', e.target.value)} /></Field>
+        <Field label="…or logo URL"><input className="input" placeholder="https://" value={sig.fields.logo} onChange={(e) => setF('logo', e.target.value)} /></Field>
         {sig.fields.logo && (
           <button className="flex w-full items-center gap-3 rounded-xl border border-line bg-gradient-to-r from-butter-soft to-clay-soft p-3 text-left transition hover:border-line-2" onClick={async () => { const c = await brandColors(sig.fields.logo); if (c.length) onColors(c) }}>
             <span className="grid size-9 place-items-center rounded-lg bg-ink text-paper"><Wand2 size={16} /></span>
             <span><span className="block text-sm font-semibold">Match colours to my logo</span><span className="block text-xs text-muted">Pulls a primary & accent from the image</span></span>
           </button>
         )}
-        <div className="flex gap-2.5 rounded-xl bg-butter-soft p-3 text-xs leading-relaxed text-[#6b4e0e]">
-          <Info size={14} className="mt-0.5 shrink-0" />
-          Uploaded images are embedded in the HTML. Some clients (notably Gmail) block embedded images, so for sending, host the image and paste its URL.
-        </div>
       </div>
     </Section>
   )

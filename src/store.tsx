@@ -1,6 +1,32 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { BrandKit, Campaign, Employee, Signature } from './types'
-import { samplePhoto, signatureFromTemplate, uid } from './lib/templates'
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import type { BrandKit, Campaign, Employee, Organization, Role, Signature } from './types'
+import { supabase } from './lib/supabase'
+import { uid } from './lib/templates'
+import { useToast } from './components/ui'
+
+// ---------- row mapping ----------
+
+type SignatureRow = { id: string; org_id: string; label: string; template_id: string; data: Pick<Signature, 'fields' | 'socials' | 'design' | 'extras'>; created_at: string; updated_at: string }
+type EmployeeRow = { id: string; org_id: string; full_name: string; title: string; department: string; email: string; phone: string; photo: string; template_id: string | null; status: Employee['status']; source: Employee['source']; external_id: string | null; updated_at: string }
+type CampaignRow = { id: string; org_id: string; data: Omit<Campaign, 'id'> }
+
+const fromSig = (r: SignatureRow): Signature => ({ id: r.id, label: r.label, templateId: r.template_id, ...r.data, createdAt: Date.parse(r.created_at), updatedAt: Date.parse(r.updated_at) })
+const toSig = (s: Signature, orgId: string, ownerId?: string) => ({
+  id: s.id, org_id: orgId, label: s.label, template_id: s.templateId,
+  data: { fields: s.fields, socials: s.socials, design: s.design, extras: s.extras },
+  ...(ownerId ? { owner_id: ownerId } : {}),
+})
+const fromEmp = (r: EmployeeRow): Employee => ({ id: r.id, fullName: r.full_name, title: r.title, department: r.department, email: r.email, phone: r.phone, photo: r.photo, templateId: r.template_id, status: r.status, source: r.source, externalId: r.external_id, updatedAt: Date.parse(r.updated_at) })
+const toEmp = (e: Employee, orgId: string) => ({ id: e.id, org_id: orgId, full_name: e.fullName, title: e.title, department: e.department, email: e.email.toLowerCase(), phone: e.phone, photo: e.photo, template_id: e.templateId, status: e.status, source: e.source, external_id: e.externalId })
+const fromCamp = (r: CampaignRow): Campaign => ({ ...r.data, id: r.id })
+const toCamp = (c: Campaign, orgId: string) => { const { id, ...data } = c; return { id, org_id: orgId, data } }
+
+export const DEFAULT_BRAND: BrandKit = {
+  company: '', website: '', logo: '', primary: '#0f766e', accent: '#e2643b', font: 'Helvetica, Arial, sans-serif',
+  address: '', phone: '', disclaimer: '', defaultTemplateId: 'aurora', socials: {},
+}
+
+// ---------- store ----------
 
 interface State {
   signatures: Signature[]
@@ -10,145 +36,134 @@ interface State {
 }
 
 interface Store extends State {
+  org: Organization
+  role: Role
+  loading: boolean
   saveSignature: (s: Signature) => void
   deleteSignature: (id: string) => void
   duplicateSignature: (id: string) => Signature | undefined
-  upsertEmployees: (list: Employee[]) => void
+  upsertEmployees: (list: Employee[]) => Promise<void>
   updateEmployee: (id: string, patch: Partial<Employee>) => void
   deleteEmployees: (ids: string[]) => void
   saveCampaign: (c: Campaign) => void
   deleteCampaign: (id: string) => void
   setBrand: (b: BrandKit) => void
-  reset: () => void
-}
-
-const KEY = 'inkwell.v2'
-const DAY = 86_400_000
-
-const isoDay = (offset: number) => new Date(Date.now() + offset * DAY).toISOString().slice(0, 10)
-
-function seed(): State {
-  const brand: BrandKit = {
-    company: 'Brightwave Studio',
-    website: 'brightwave.studio',
-    logo: '',
-    primary: '#0f766e',
-    accent: '#e2643b',
-    font: 'Helvetica, Arial, sans-serif',
-    address: '120 Harbour St, Sydney NSW 2000',
-    phone: '+61 2 9000 1234',
-    disclaimer: '',
-    defaultTemplateId: 'aurora',
-    socials: { linkedin: 'linkedin.com/company/brightwave', instagram: 'instagram.com/brightwave', x: 'x.com/brightwave' },
-  }
-
-  const campaigns: Campaign[] = [
-    { id: 'c1', name: 'Summit 2026 webinar', headline: 'Join the Brand Summit — Nov 20', subline: 'Live workshop on email-first marketing. Free seats left.', ctaLabel: 'Save my seat', url: 'brightwave.studio/summit', image: '', style: 'gradient', from: '#e2643b', to: '#f3a55b', start: isoDay(-6), end: isoDay(19), departments: ['Marketing', 'Sales'], active: true, impressions: 18420, clicks: 1166 },
-    { id: 'c2', name: 'Case study: Northwind', headline: 'How Northwind grew replies 42%', subline: 'Read the 3-minute case study', ctaLabel: 'Read story', url: 'brightwave.studio/northwind', image: '', style: 'dark', from: '#0f766e', to: '#0f766e', start: isoDay(-30), end: isoDay(30), departments: [], active: true, impressions: 9210, clicks: 482 },
-    { id: 'c3', name: 'Holiday hours', headline: 'Our studio closes Dec 24 – Jan 2', subline: 'Urgent support stays available 24/7.', ctaLabel: '', url: 'brightwave.studio/support', image: '', style: 'light', from: '#0f766e', to: '#0f766e', start: isoDay(50), end: isoDay(63), departments: [], active: false, impressions: 0, clicks: 0 },
-  ]
-
-  const s1 = signatureFromTemplate('aurora', { fullName: 'Om Raut', title: 'Founder & Director', company: 'Brightwave Studio', address: '' }, 3)
-  s1.label = 'Primary — Om'
-  s1.extras.campaignId = 'c1'
-  s1.stats = { impressions: 12840, clicks: 914 }
-  const s2 = signatureFromTemplate('executive', { fullName: 'Om Raut', title: 'Director', company: 'Brightwave Studio' }, 3)
-  s2.label = 'Formal — Clients'
-  s2.stats = { impressions: 5320, clicks: 241 }
-  const s3 = signatureFromTemplate('compact', { fullName: 'Om Raut', title: 'Director', company: 'Brightwave' }, 3)
-  s3.label = 'Replies & forwards'
-  s3.stats = { impressions: 20110, clicks: 388 }
-  s2.updatedAt -= DAY * 2
-  s3.updatedAt -= DAY * 6
-
-  const people: [string, string, string][] = [
-    ['Sarah Chen', 'Marketing Lead', 'Marketing'],
-    ['James Okafor', 'Account Executive', 'Sales'],
-    ['Mia Rossi', 'Product Designer', 'Design'],
-    ['Liam Patel', 'Customer Success', 'Support'],
-    ['Ava Thompson', 'HR Business Partner', 'People'],
-    ['Noah Williams', 'Sales Director', 'Sales'],
-    ['Zara Ahmed', 'Content Strategist', 'Marketing'],
-    ['Ethan Brooks', 'IT Operations', 'Operations'],
-    ['Chloe Martin', 'Support Specialist', 'Support'],
-    ['Lucas Nguyen', 'Brand Designer', 'Design'],
-  ]
-  const employees: Employee[] = people.map(([fullName, title, department], i) => ({
-    id: uid(),
-    fullName,
-    title,
-    department,
-    email: `${fullName.split(' ')[0].toLowerCase()}@brightwave.studio`,
-    phone: `+61 4${String(10 + i).padStart(2, '0')} 555 ${String(100 + i * 7).slice(-3)}`,
-    photo: i % 3 === 2 ? '' : samplePhoto(i),
-    templateId: i % 4 === 3 ? null : 'aurora',
-    status: i === 4 || i === 8 ? 'invited' : i === 6 ? 'outdated' : 'active',
-    updatedAt: Date.now() - i * DAY,
-  }))
-
-  return { signatures: [s1, s2, s3], employees, campaigns, brand }
-}
-
-function load(): State {
-  try {
-    const raw = localStorage.getItem(KEY)
-    if (raw) return JSON.parse(raw) as State
-  } catch {
-    /* fall through to seed */
-  }
-  return seed()
+  setTenant: (tenantId: string) => void
+  reload: () => Promise<void>
 }
 
 const Ctx = createContext<Store | null>(null)
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<State>(load)
+export function StoreProvider({ org: initialOrg, role, userId, children }: { org: Organization & { brand: BrandKit }; role: Role; userId: string; children: ReactNode }) {
+  const toast = useToast()
+  const [org, setOrg] = useState<Organization>({ id: initialOrg.id, name: initialOrg.name, msTenantId: initialOrg.msTenantId })
+  const [state, setState] = useState<State>({ signatures: [], employees: [], campaigns: [], brand: { ...DEFAULT_BRAND, ...initialOrg.brand } })
+  const [loading, setLoading] = useState(true)
+  const stateRef = useRef(state)
+  stateRef.current = state
+  const orgId = org.id
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(state))
-    } catch {
-      /* quota exceeded — uploaded images are the usual cause; keep running in memory */
-    }
-  }, [state])
+  const reload = useCallback(async () => {
+    const [s, e, c] = await Promise.all([
+      supabase.from('signatures').select('*').eq('org_id', orgId).order('updated_at', { ascending: false }),
+      supabase.from('employees').select('*').eq('org_id', orgId).order('full_name'),
+      supabase.from('campaigns').select('*').eq('org_id', orgId).order('created_at', { ascending: false }),
+    ])
+    const err = s.error || e.error || c.error
+    if (err) toast(`Couldn't load workspace: ${err.message}`)
+    setState((st) => ({
+      ...st,
+      signatures: (s.data as SignatureRow[] | null)?.map(fromSig) ?? st.signatures,
+      employees: (e.data as EmployeeRow[] | null)?.map(fromEmp) ?? st.employees,
+      campaigns: (c.data as CampaignRow[] | null)?.map(fromCamp) ?? st.campaigns,
+    }))
+    setLoading(false)
+  }, [orgId, toast])
+
+  useEffect(() => { reload() }, [reload])
 
   const store = useMemo<Store>(() => {
     const patch = (fn: (s: State) => Partial<State>) => setState((s) => ({ ...s, ...fn(s) }))
+    // Optimistic writes: update the UI now, roll back by reloading if the database refuses.
+    const write = async (label: string, op: PromiseLike<{ error: { message: string } | null }>) => {
+      const { error } = await op
+      if (error) {
+        toast(`${label} failed: ${error.message}`)
+        reload()
+      }
+    }
+
     return {
       ...state,
-      saveSignature: (sig) =>
-        patch((s) => {
-          const next = { ...sig, updatedAt: Date.now() }
-          const exists = s.signatures.some((x) => x.id === sig.id)
-          return { signatures: exists ? s.signatures.map((x) => (x.id === sig.id ? next : x)) : [next, ...s.signatures] }
-        }),
-      deleteSignature: (id) => patch((s) => ({ signatures: s.signatures.filter((x) => x.id !== id) })),
+      org,
+      role,
+      loading,
+      reload,
+      saveSignature: (sig) => {
+        const next = { ...sig, updatedAt: Date.now() }
+        const exists = stateRef.current.signatures.some((x) => x.id === sig.id)
+        patch((s) => ({ signatures: exists ? s.signatures.map((x) => (x.id === sig.id ? next : x)) : [next, ...s.signatures] }))
+        write('Saving signature', supabase.from('signatures').upsert(toSig(next, orgId, exists ? undefined : userId)))
+      },
+      deleteSignature: (id) => {
+        patch((s) => ({ signatures: s.signatures.filter((x) => x.id !== id) }))
+        write('Deleting signature', supabase.from('signatures').delete().eq('id', id))
+      },
       duplicateSignature: (id) => {
-        const src = state.signatures.find((x) => x.id === id)
+        const src = stateRef.current.signatures.find((x) => x.id === id)
         if (!src) return
-        const copy: Signature = { ...structuredClone(src), id: uid(), label: `${src.label} (copy)`, createdAt: Date.now(), updatedAt: Date.now(), stats: { impressions: 0, clicks: 0 } }
+        const copy: Signature = { ...structuredClone(src), id: uid(), label: `${src.label} (copy)`, createdAt: Date.now(), updatedAt: Date.now() }
         patch((s) => ({ signatures: [copy, ...s.signatures] }))
+        write('Duplicating signature', supabase.from('signatures').insert(toSig(copy, orgId, userId)))
         return copy
       },
-      upsertEmployees: (list) =>
-        patch((s) => {
-          const map = new Map(s.employees.map((e) => [e.email.toLowerCase(), e]))
-          list.forEach((e) => map.set(e.email.toLowerCase(), { ...map.get(e.email.toLowerCase()), ...e }))
-          return { employees: [...map.values()] }
-        }),
-      updateEmployee: (id, p) => patch((s) => ({ employees: s.employees.map((e) => (e.id === id ? { ...e, ...p, updatedAt: Date.now() } : e)) })),
-      deleteEmployees: (ids) => patch((s) => ({ employees: s.employees.filter((e) => !ids.includes(e.id)) })),
-      saveCampaign: (c) =>
-        patch((s) => ({ campaigns: s.campaigns.some((x) => x.id === c.id) ? s.campaigns.map((x) => (x.id === c.id ? c : x)) : [c, ...s.campaigns] })),
-      deleteCampaign: (id) =>
+      upsertEmployees: async (list) => {
+        // Match on email so re-imports update people instead of duplicating them.
+        const byEmail = new Map(stateRef.current.employees.map((e) => [e.email.toLowerCase(), e]))
+        const merged = list.map((e) => {
+          const prev = byEmail.get(e.email.toLowerCase())
+          return prev ? { ...prev, ...e, id: prev.id, photo: e.photo || prev.photo, templateId: e.templateId ?? prev.templateId } : e
+        })
+        const { error } = await supabase.from('employees').upsert(merged.map((e) => toEmp(e, orgId)), { onConflict: 'org_id,email' })
+        if (error) { toast(`Import failed: ${error.message}`); return }
+        await reload()
+      },
+      updateEmployee: (id, p) => {
+        const cur = stateRef.current.employees.find((e) => e.id === id)
+        if (!cur) return
+        const next = { ...cur, ...p, updatedAt: Date.now() }
+        patch((s) => ({ employees: s.employees.map((e) => (e.id === id ? next : e)) }))
+        write('Updating person', supabase.from('employees').update(toEmp(next, orgId)).eq('id', id))
+      },
+      deleteEmployees: (ids) => {
+        patch((s) => ({ employees: s.employees.filter((e) => !ids.includes(e.id)) }))
+        write('Removing people', supabase.from('employees').delete().in('id', ids))
+      },
+      saveCampaign: (c) => {
+        patch((s) => ({ campaigns: s.campaigns.some((x) => x.id === c.id) ? s.campaigns.map((x) => (x.id === c.id ? c : x)) : [c, ...s.campaigns] }))
+        write('Saving campaign', supabase.from('campaigns').upsert(toCamp(c, orgId)))
+      },
+      deleteCampaign: (id) => {
+        const affected = stateRef.current.signatures.filter((x) => x.extras.campaignId === id).map((x) => ({ ...x, extras: { ...x.extras, campaignId: null } }))
         patch((s) => ({
           campaigns: s.campaigns.filter((x) => x.id !== id),
-          signatures: s.signatures.map((x) => (x.extras.campaignId === id ? { ...x, extras: { ...x.extras, campaignId: null } } : x)),
-        })),
-      setBrand: (brand) => patch(() => ({ brand })),
-      reset: () => setState(seed()),
+          signatures: s.signatures.map((x) => affected.find((a) => a.id === x.id) ?? x),
+        }))
+        write('Deleting campaign', supabase.from('campaigns').delete().eq('id', id))
+        if (affected.length) write('Detaching banner', supabase.from('signatures').upsert(affected.map((a) => toSig(a, orgId))))
+      },
+      setBrand: (brand) => {
+        patch(() => ({ brand }))
+        const name = brand.company.trim() || org.name
+        setOrg((o) => ({ ...o, name }))
+        write('Saving brand kit', supabase.from('organizations').update({ brand, name }).eq('id', orgId))
+      },
+      setTenant: (tenantId) => {
+        setOrg((o) => ({ ...o, msTenantId: tenantId }))
+        write('Linking Microsoft tenant', supabase.from('organizations').update({ ms_tenant_id: tenantId }).eq('id', orgId))
+      },
     }
-  }, [state])
+  }, [state, org, role, loading, orgId, userId, reload, toast])
 
   return <Ctx.Provider value={store}>{children}</Ctx.Provider>
 }

@@ -1,7 +1,9 @@
-import { HashRouter, Route, Routes } from 'react-router-dom'
-import { StoreProvider } from './store'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { AuthProvider } from './auth'
+import { supabaseConfigured } from './lib/supabase'
 import { ToastProvider } from './components/ui'
 import Layout from './components/Layout'
+import RequireWorkspace from './components/Workspace'
 import Dashboard from './pages/Dashboard'
 import Signatures from './pages/Signatures'
 import Editor from './pages/Editor'
@@ -10,26 +12,42 @@ import Team from './pages/Team'
 import Campaigns from './pages/Campaigns'
 import Analytics from './pages/Analytics'
 import Brand from './pages/Brand'
+import { Forgot, Login, Onboarding, ResetPassword, Signup } from './pages/Auth'
+import Setup from './pages/Setup'
+import Settings from './pages/Settings'
+import { Privacy, Terms } from './pages/Legal'
 
 export default function App() {
+  if (!supabaseConfigured) return <Setup />
   return (
-    <StoreProvider>
+    <AuthProvider>
       <ToastProvider>
-        <HashRouter>
+        <BrowserRouter>
           <Routes>
-            <Route element={<Layout />}>
-              <Route index element={<Dashboard />} />
-              <Route path="signatures" element={<Signatures />} />
-              <Route path="editor/:id" element={<Editor />} />
-              <Route path="templates" element={<Templates />} />
-              <Route path="team" element={<Team />} />
-              <Route path="campaigns" element={<Campaigns />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="brand" element={<Brand />} />
+            <Route path="login" element={<Login />} />
+            <Route path="signup" element={<Signup />} />
+            <Route path="forgot" element={<Forgot />} />
+            <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="onboarding" element={<Onboarding />} />
+            <Route path="terms" element={<Terms />} />
+            <Route path="privacy" element={<Privacy />} />
+            <Route element={<RequireWorkspace />}>
+              <Route element={<Layout />}>
+                <Route index element={<Dashboard />} />
+                <Route path="signatures" element={<Signatures />} />
+                <Route path="editor/:id" element={<Editor />} />
+                <Route path="templates" element={<Templates />} />
+                <Route path="team" element={<Team />} />
+                <Route path="campaigns" element={<Campaigns />} />
+                <Route path="insights" element={<Analytics />} />
+                <Route path="brand" element={<Brand />} />
+                <Route path="settings" element={<Settings />} />
+                <Route path="*" element={<Dashboard />} />
+              </Route>
             </Route>
           </Routes>
-        </HashRouter>
+        </BrowserRouter>
       </ToastProvider>
-    </StoreProvider>
+    </AuthProvider>
   )
 }

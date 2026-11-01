@@ -36,7 +36,7 @@ export function download(filename: string, content: string, type = 'text/html') 
 
 export const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'signature'
 
-/** Downscale uploads so they fit comfortably in localStorage. */
+/** Downscale an image in the browser before uploading it. */
 export function readImage(file: File, max = 240): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
@@ -110,4 +110,8 @@ export function timeAgo(ts: number) {
   if (s < 3600) return `${Math.floor(s / 60)}m ago`
   if (s < 86400) return `${Math.floor(s / 3600)}h ago`
   return `${Math.floor(s / 86400)}d ago`
+}
+
+export async function dataUrlToBlob(dataUrl: string) {
+  return (await fetch(dataUrl)).blob()
 }

@@ -1,4 +1,5 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { Check, Copy, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UserPlus, Wand2, Eye } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
@@ -7,6 +8,8 @@ import { TEMPLATES, templateById, uid, DEFAULT_EXTRAS } from '../lib/templates'
 import { exportDocument, renderSignature } from '../lib/render'
 import { copyRich, download, parseCsv, timeAgo } from '../lib/io'
 import { Avatar, Field, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
+import MicrosoftImport from '../components/MicrosoftImport'
+import { MicrosoftLogo } from './Auth'
 
 const STATUS: Record<Employee['status'], { label: string; cls: string }> = {
   active: { label: 'On brand', cls: 'bg-pine-soft text-pine' },
@@ -14,10 +17,9 @@ const STATUS: Record<Employee['status'], { label: string; cls: string }> = {
   invited: { label: 'Invited', cls: 'bg-paper-2 text-muted' },
 }
 
-const SAMPLE_CSV = `name,title,department,email,phone
-Grace Lee,Partnerships Manager,Sales,grace@brightwave.studio,+61 400 111 222
-Omar Haddad,Frontend Engineer,Engineering,omar@brightwave.studio,+61 400 333 444
-Isla Murphy,Office Manager,Operations,isla@brightwave.studio,`
+const CSV_TEMPLATE = `name,title,department,email,phone,photo
+Jane Smith,Marketing Manager,Marketing,jane@yourcompany.com,+61 400 000 000,
+`
 
 /** Turn a person + the brand kit into a full signature. */
 export function employeeSignature(e: Employee, brand: ReturnType<typeof useStore>['brand'], campaignId: string | null): Signature {
@@ -28,7 +30,7 @@ export function employeeSignature(e: Employee, brand: ReturnType<typeof useStore
     socials: brand.socials,
     design: { primary: brand.primary, accent: brand.accent, text: meta.design.text ?? '#0f172a', font: brand.font, photoShape: meta.design.photoShape ?? 'circle', size: 'md', iconStyle: meta.design.iconStyle ?? 'filled' },
     extras: { ...DEFAULT_EXTRAS, animations: meta.animated, verified: false, disclaimer: brand.disclaimer, campaignId },
-    createdAt: e.updatedAt, updatedAt: e.updatedAt, stats: { impressions: 0, clicks: 0 },
+    createdAt: e.updatedAt, updatedAt: e.updatedAt,
   }
 }
 
@@ -39,7 +41,14 @@ export default function Team() {
   const [q, setQ] = useState('')
   const [dept, setDept] = useState('All')
   const [sel, setSel] = useState<string[]>([])
-  const [importOpen, setImportOpen] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const [importOpen, setImportOpen] = useState(params.get('import') === 'csv')
+  const [msOpen, setMsOpen] = useState(params.get('import') === 'microsoft')
+  useEffect(() => {
+    // ?import=… deep links (dashboard buttons, the Microsoft OAuth return) open the matching dialog once.
+    if (params.get('import')) { params.delete('import'); setParams(params, { replace: true }) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [addOpen, setAddOpen] = useState(false)
   const [view, setView] = useState<Employee | null>(null)
 
@@ -70,7 +79,8 @@ export default function Team() {
         title="Team manager"
         subtitle="One brand kit, every employee. Import your people, assign a template, and everyone gets a consistent, compliant signature."
         actions={<>
-          <button className="btn btn-line" onClick={() => setImportOpen(true)}><Upload size={16} /> Bulk import</button>
+          <button className="btn btn-line" onClick={() => setMsOpen(true)}><MicrosoftLogo size={15} /> {employees.some((e) => e.source === 'microsoft') ? 'Sync Microsoft 365' : 'Import from Microsoft 365'}</button>
+          <button className="btn btn-line" onClick={() => setImportOpen(true)}><Upload size={16} /> CSV import</button>
           <button className="btn btn-ink" onClick={() => setAddOpen(true)}><UserPlus size={16} /> Add person</button>
         </>}
       />
@@ -151,13 +161,28 @@ export default function Team() {
                   </td>
                 </tr>
               ))}
-              {list.length === 0 && <tr><td colSpan={7} className="py-14 text-center text-muted">No one matches that search.</td></tr>}
+              {list.length === 0 && (
+                <tr><td colSpan={7} className="px-6 py-14 text-center">
+                  {employees.length ? <span className="text-muted">No one matches that search.</span> : (
+                    <div className="mx-auto max-w-md">
+                      <h3 className="h-display text-2xl">Bring in your team</h3>
+                      <p className="mt-1 text-sm text-muted">Everyone you add gets a signature built from your brand kit. Re-sync any time people join or change roles.</p>
+                      <div className="mt-5 flex flex-wrap justify-center gap-2">
+                        <button className="btn btn-ink" onClick={() => setMsOpen(true)}><MicrosoftLogo size={15} /> Import from Microsoft 365</button>
+                        <button className="btn btn-line" onClick={() => setImportOpen(true)}><Upload size={15} /> Upload CSV</button>
+                        <button className="btn btn-ghost" onClick={() => setAddOpen(true)}><UserPlus size={15} /> Add one person</button>
+                      </div>
+                    </div>
+                  )}
+                </td></tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
+      <MicrosoftImport open={msOpen} onClose={() => setMsOpen(false)} />
       <AddModal open={addOpen} onClose={() => setAddOpen(false)} />
       <Modal open={!!view} onClose={() => setView(null)} title={view?.fullName ?? ''} subtitle={view ? `${templateById(view.templateId ?? brand.defaultTemplateId).name} · generated from your brand kit` : ''} width={720}
         footer={view && <>
@@ -190,7 +215,7 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
   const run = () => {
     const list: Employee[] = valid.map((r) => ({
       id: uid(), fullName: r.name || r.fullname, title: r.title || r.jobtitle || '', department: r.department || r.team || '',
-      email: r.email, phone: r.phone || r.mobile || '', photo: r.photo || '', templateId: tpl, status: 'active', updatedAt: Date.now(),
+      email: r.email, phone: r.phone || r.mobile || '', photo: r.photo || '', templateId: tpl, status: 'active', source: 'csv', externalId: null, updatedAt: Date.now(),
     }))
     store.upsertEmployees(list)
     toast(`Created ${list.length} signatures`)
@@ -203,11 +228,11 @@ function ImportModal({ open, onClose }: { open: boolean; onClose: () => void }) 
       footer={<><button className="btn btn-line" onClick={onClose}>Cancel</button><button className="btn btn-ink" disabled={!valid.length} onClick={run}><Wand2 size={15} /> Generate {valid.length || ''} signatures</button></>}>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <button className="btn btn-line btn-sm" onClick={() => file.current?.click()}><FileSpreadsheet size={14} /> Upload .csv</button>
-        <button className="btn btn-ghost btn-sm" onClick={() => setText(SAMPLE_CSV)}>Use sample data</button>
+        <button className="btn btn-ghost btn-sm" onClick={() => download('inkwell-people-template.csv', CSV_TEMPLATE, 'text/csv')}><Download size={14} /> CSV template</button>
         <input ref={file} type="file" accept=".csv,text/csv" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) setText(await f.text()) }} />
         <span className="ml-auto text-xs text-muted">Columns: name, title, department, email, phone, photo</span>
       </div>
-      <textarea className="input font-mono text-xs" rows={7} placeholder={SAMPLE_CSV} value={text} onChange={(e) => setText(e.target.value)} />
+      <textarea className="input font-mono text-xs" rows={7} placeholder={CSV_TEMPLATE} value={text} onChange={(e) => setText(e.target.value)} />
       <Field label="Template for everyone" className="mt-4">
         <select className="input" value={tpl} onChange={(e) => setTpl(e.target.value)}>{TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select>
       </Field>
@@ -236,7 +261,7 @@ function AddModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [f, setF] = useState(blank)
   const ok = f.fullName && /\S+@\S+/.test(f.email)
   const save = () => {
-    store.upsertEmployees([{ id: uid(), ...f, photo: '', templateId: store.brand.defaultTemplateId, status: 'invited', updatedAt: Date.now() }])
+    store.upsertEmployees([{ id: uid(), ...f, photo: '', templateId: store.brand.defaultTemplateId, status: 'active', source: 'manual', externalId: null, updatedAt: Date.now() }])
     toast(`${f.fullName} added`)
     setF(blank)
     onClose()

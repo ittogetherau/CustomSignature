@@ -445,7 +445,7 @@ ${banner(c)}${disclaimer(c)}`,
       id: 'inline', name: '', headline: c.s.extras.cta?.label || `Discover ${c.s.fields.company || 'what we do'}`,
       subline: c.s.extras.quote || bare(c.s.fields.website), ctaLabel: c.s.extras.cta ? 'Learn more' : '',
       url: c.s.extras.cta?.url || c.s.fields.website, image: '', style: 'gradient', from: primary, to: accent,
-      start: '', end: '', departments: [], active: true, impressions: 0, clicks: 0,
+      start: '', end: '', departments: [], active: true,
     }
     return wrap(
       c,

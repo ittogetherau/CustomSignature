@@ -166,7 +166,7 @@ const SAMPLE_PHOTOS = [
 
 export const samplePhoto = (i: number) => SAMPLE_PHOTOS[i % SAMPLE_PHOTOS.length]
 
-export const uid = () => Math.random().toString(36).slice(2, 10)
+export const uid = () => crypto.randomUUID()
 
 /** A signature preloaded with a template's showcase content — used for gallery cards and "use template". */
 export function signatureFromTemplate(templateId: string, overrides: Partial<SignatureFields> = {}, index = 0): Signature {
@@ -182,6 +182,5 @@ export function signatureFromTemplate(templateId: string, overrides: Partial<Sig
     extras: { ...DEFAULT_EXTRAS, ...t.extras, animations: t.animated },
     createdAt: now,
     updatedAt: now,
-    stats: { impressions: 0, clicks: 0 },
   }
 }

@@ -5,8 +5,8 @@ import { useStore } from '../store'
 import type { Campaign } from '../types'
 import { bannerHtml } from '../lib/render'
 import { uid } from '../lib/templates'
-import { compact, readImage } from '../lib/io'
 import { ColorInput, Empty, Field, Modal, PageHeader, SignatureHTML, useToast } from '../components/ui'
+import { useImageUpload } from '../components/upload'
 
 const today = () => new Date().toISOString().slice(0, 10)
 const plus = (d: number) => new Date(Date.now() + d * 86_400_000).toISOString().slice(0, 10)
@@ -24,14 +24,14 @@ export default function Campaigns() {
   const toast = useToast()
   const [edit, setEdit] = useState<Campaign | null>(null)
 
-  const blank = (): Campaign => ({ id: uid(), name: 'New campaign', headline: 'Your headline goes here', subline: 'A short supporting line', ctaLabel: 'Learn more', url: '', image: '', style: 'gradient', from: '#e2643b', to: '#f3a55b', start: today(), end: plus(14), departments: [], active: true, impressions: 0, clicks: 0 })
+  const blank = (): Campaign => ({ id: uid(), name: 'New campaign', headline: 'Your headline goes here', subline: 'A short supporting line', ctaLabel: 'Learn more', url: '', image: '', style: 'gradient', from: '#e2643b', to: '#f3a55b', start: today(), end: plus(14), departments: [], active: true })
 
   return (
     <>
       <PageHeader
         eyebrow="Marketing"
         title="Banners & campaigns"
-        subtitle="Turn every email your team sends into a placement. Schedule banners, target departments, and track clicks."
+        subtitle="Turn every email your team sends into a placement. Schedule banners and target them by department."
         actions={<button className="btn btn-ink" onClick={() => setEdit(blank())}><Plus size={16} /> New campaign</button>}
       />
 
@@ -57,11 +57,6 @@ export default function Campaigns() {
                       <button className="btn btn-ghost btn-sm btn-icon" aria-label="Delete" onClick={() => { deleteCampaign(c.id); toast('Campaign deleted') }}><Trash2 size={15} /></button>
                     </div>
                   </div>
-                  <div className="mt-4 grid grid-cols-3 divide-x divide-line rounded-xl border border-line text-center">
-                    <div className="py-2.5"><div className="h-display text-xl">{compact(c.impressions)}</div><div className="text-[11px] text-muted">Impressions</div></div>
-                    <div className="py-2.5"><div className="h-display text-xl">{compact(c.clicks)}</div><div className="text-[11px] text-muted">Clicks</div></div>
-                    <div className="py-2.5"><div className="h-display text-xl">{c.impressions ? ((c.clicks / c.impressions) * 100).toFixed(1) : '0.0'}%</div><div className="text-[11px] text-muted">CTR</div></div>
-                  </div>
                 </div>
               </article>
             )
@@ -79,13 +74,14 @@ const fmt = (d: string) => new Date(d + 'T00:00').toLocaleDateString('en', { mon
 const PRESETS: [string, string][] = [['#e2643b', '#f3a55b'], ['#0f766e', '#34d399'], ['#1e293b', '#475569'], ['#be123c', '#fb7185'], ['#4338ca', '#06b6d4'], ['#a16207', '#facc15']]
 
 function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: () => void; onSave: (c: Campaign) => void }) {
-  const { employees } = useStore()
+  const { employees, campaigns } = useStore()
+  const upload = useImageUpload()
   const [c, setC] = useState(value)
   const depts = [...new Set(employees.map((e) => e.department).filter(Boolean))]
   const set = <K extends keyof Campaign>(k: K, v: Campaign[K]) => setC({ ...c, [k]: v })
 
   return (
-    <Modal open onClose={onClose} title={value.impressions || value.name !== 'New campaign' ? 'Edit campaign' : 'New campaign'} width={760}
+    <Modal open onClose={onClose} title={campaigns.some((x) => x.id === value.id) ? 'Edit campaign' : 'New campaign'} width={760}
       footer={<><button className="btn btn-line" onClick={onClose}>Cancel</button><button className="btn btn-ink" onClick={() => onSave(c)}>Save campaign</button></>}>
       <div className="mb-5 rounded-xl border border-line bg-white p-5"><SignatureHTML html={bannerHtml(c, 'Helvetica, Arial, sans-serif', true)} /></div>
 
@@ -103,7 +99,7 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
             <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-line-2 bg-paper/50 p-3 hover:border-ink">
               <ImagePlus size={18} className="text-muted" />
               <span className="text-sm">{c.image ? 'Replace image' : 'Upload an image'}</span>
-              <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) set('image', await readImage(f, 1200)) }} />
+              <input type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) { const u = await upload(f, 'banner', 1200); if (u) set('image', u) } }} />
             </label>
           </div>
         ) : (

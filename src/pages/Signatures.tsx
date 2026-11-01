@@ -4,7 +4,7 @@ import { Copy, CopyPlus, Download, MoreHorizontal, PenLine, Plus, Trash2, Sparkl
 import { useStore } from '../store'
 import { exportDocument, renderSignature } from '../lib/render'
 import { templateById } from '../lib/templates'
-import { compact, copyRich, download, slug, timeAgo } from '../lib/io'
+import { copyRich, download, slug, timeAgo } from '../lib/io'
 import { Empty, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
 
 export default function Signatures() {
@@ -29,7 +29,6 @@ export default function Signatures() {
         <div className="grid gap-5 md:grid-cols-2">
           {signatures.map((s, i) => {
             const t = templateById(s.templateId)
-            const ctr = s.stats.impressions ? ((s.stats.clicks / s.stats.impressions) * 100).toFixed(1) : '—'
             return (
               <article key={s.id} className="card group animate-rise overflow-hidden" style={{ animationDelay: `${i * 50}ms` }}>
                 <button onClick={() => navigate(`/editor/${s.id}`)} className="relative block h-[220px] w-full overflow-hidden border-b border-line bg-white px-6 text-left">
@@ -43,7 +42,7 @@ export default function Signatures() {
                       {i === 0 && <span className="tag bg-pine-soft text-pine">Default</span>}
                       {s.extras.animations && <Sparkles size={13} className="text-clay" />}
                     </div>
-                    <div className="mt-0.5 text-xs text-muted">{t.name} · edited {timeAgo(s.updatedAt)} · {compact(s.stats.impressions)} views · {ctr}% CTR</div>
+                    <div className="mt-0.5 text-xs text-muted">{t.name} · edited {timeAgo(s.updatedAt)}</div>
                   </div>
                   <button className="btn btn-line btn-sm" onClick={async () => { await copyRich(renderSignature(s, { campaigns })); toast('Signature copied') }}><Copy size={14} /> Copy</button>
                   <div className="relative">

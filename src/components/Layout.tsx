@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, LayoutGrid, Megaphone, Menu, Palette, PenLine, Plus, Sparkles, Users, X, Home } from 'lucide-react'
+import { BarChart3, ChevronUp, LayoutGrid, LogOut, Megaphone, Menu, Palette, PenLine, Plus, Settings, Users, X, Home } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 
 const NAV = [
   { to: '/', label: 'Overview', icon: Home, end: true },
@@ -10,8 +11,9 @@ const NAV = [
   { to: '/templates', label: 'Template gallery', icon: LayoutGrid },
   { to: '/team', label: 'Team manager', icon: Users },
   { to: '/campaigns', label: 'Banners & campaigns', icon: Megaphone },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/insights', label: 'Insights', icon: BarChart3 },
   { to: '/brand', label: 'Brand kit', icon: Palette },
+  { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
 export function Logo({ light = false }: { light?: boolean }) {
@@ -27,7 +29,9 @@ export function Logo({ light = false }: { light?: boolean }) {
 }
 
 function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
-  const { brand, employees, signatures } = useStore()
+  const { org, role, employees, signatures } = useStore()
+  const { user, signOut } = useAuth()
+  const [menu, setMenu] = useState(false)
   const navigate = useNavigate()
   const outdated = employees.filter((e) => e.status !== 'active').length
 
@@ -71,18 +75,25 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </nav>
 
-      <div className="mt-auto space-y-3">
-        <div className="rounded-xl border border-paper/10 bg-paper/[0.04] p-3.5">
-          <div className="flex items-center gap-2 text-[13px] font-semibold"><Sparkles size={14} className="text-butter" /> Animated signatures</div>
-          <p className="mt-1 text-xs leading-relaxed text-paper/55">Glowing photos, floating logos and hover-lift icons are on for Pro templates.</p>
-        </div>
-        <div className="flex items-center gap-3 rounded-xl px-2 py-1.5">
-          <div className="grid size-9 place-items-center rounded-lg bg-butter text-sm font-bold text-ink">{brand.company.slice(0, 1)}</div>
+      <div className="relative mt-auto">
+        {menu && (
+          <>
+            <div className="fixed inset-0 z-10" onClick={() => setMenu(false)} />
+            <div className="absolute bottom-full left-0 right-0 z-20 mb-2 animate-rise rounded-xl border border-paper/10 bg-ink-2 p-1.5 shadow-pop">
+              <div className="truncate px-3 py-2 text-xs text-paper/50">{user?.email}</div>
+              <button onClick={() => { navigate('/settings'); setMenu(false); onNavigate?.() }} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-paper/80 hover:bg-paper/10"><Settings size={15} /> Workspace settings</button>
+              <button onClick={() => signOut()} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-paper/80 hover:bg-paper/10"><LogOut size={15} /> Sign out</button>
+            </div>
+          </>
+        )}
+        <button onClick={() => setMenu(!menu)} className="flex w-full items-center gap-3 rounded-xl px-2 py-2 text-left transition hover:bg-paper/5">
+          <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-butter text-sm font-bold text-ink">{(org.name || '?').slice(0, 1).toUpperCase()}</div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{brand.company}</div>
-            <div className="truncate text-xs text-paper/45">{employees.length} members · Studio plan</div>
+            <div className="truncate text-sm font-semibold">{org.name}</div>
+            <div className="truncate text-xs capitalize text-paper/45">{role} · {employees.length} {employees.length === 1 ? 'person' : 'people'}</div>
           </div>
-        </div>
+          <ChevronUp size={15} className="text-paper/40" />
+        </button>
       </div>
     </div>
   )

@@ -182,3 +182,4 @@ export function Avatar({ name, photo, size = 32 }: { name: string; photo?: strin
     <span className="grid shrink-0 place-items-center rounded-full font-semibold text-white ring-2 ring-surface" style={{ width: size, height: size, background: bg, fontSize: size * 0.38 }}>{ini}</span>
   )
 }
+

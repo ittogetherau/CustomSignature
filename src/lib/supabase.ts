@@ -1,0 +1,23 @@
+import { createClient } from '@supabase/supabase-js'
+
+const url = import.meta.env.VITE_SUPABASE_URL as string | undefined
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined
+
+/** False until VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY are set — the app shows a setup screen instead of crashing. */
+export const supabaseConfigured = Boolean(url && anonKey)
+
+export const supabase = createClient(url ?? 'http://localhost:54321', anonKey ?? 'missing-anon-key', {
+  auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
+})
+
+/** Graph scope needed to read the customer's directory. Requires one-time admin consent per tenant. */
+export const MS_DIRECTORY_SCOPES = 'openid profile email offline_access User.Read User.Read.All'
+export const MS_LOGIN_SCOPES = 'openid profile email offline_access User.Read'
+
+export async function uploadAsset(orgId: string, file: Blob, name: string) {
+  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/svg+xml' ? 'svg' : 'jpg'
+  const path = `${orgId}/${name}-${crypto.randomUUID().slice(0, 8)}.${ext}`
+  const { error } = await supabase.storage.from('assets').upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false })
+  if (error) throw error
+  return supabase.storage.from('assets').getPublicUrl(path).data.publicUrl
+}

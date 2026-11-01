@@ -3,12 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowRight, Eye, Search, Sparkles, X } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
-import { CATEGORIES, TEMPLATES, signatureFromTemplate, type TemplateMeta } from '../lib/templates'
+import { CATEGORIES, DEFAULT_FIELDS, TEMPLATES, signatureFromTemplate, type TemplateMeta } from '../lib/templates'
+import { useAuth } from '../auth'
 import { renderSignature } from '../lib/render'
 import { Modal, PageHeader, SigThumb, SignatureHTML, Toggle, useToast } from '../components/ui'
 
 export default function Templates() {
   const { signatures, campaigns, brand, saveSignature } = useStore()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
   const [cat, setCat] = useState('All')
@@ -38,9 +40,20 @@ export default function Templates() {
     const i = TEMPLATES.indexOf(t)
     const s = build(t, i)
     if (!mine) {
-      // new signatures start from the brand kit rather than showcase content
-      s.fields = { ...s.fields, company: brand.company, website: brand.website, logo: brand.logo, address: '' }
+      // New signatures start from the signed-in user and the brand kit — never the showcase person.
+      const fullName = (user?.user_metadata?.full_name as string) || (user?.user_metadata?.name as string) || ''
+      const site = brand.website
+      s.label = fullName ? `${fullName.split(' ')[0]} — ${t.name}` : `${t.name} signature`
+      s.fields = { ...DEFAULT_FIELDS, fullName, email: user?.email ?? '', company: brand.company, website: site, phone: brand.phone, address: '', logo: brand.logo, photo: '', title: '' }
       s.socials = { ...brand.socials }
+      s.design = { ...s.design, primary: brand.primary || s.design.primary, accent: brand.accent || s.design.accent, font: t.design.font ?? brand.font }
+      s.extras = {
+        ...s.extras,
+        navLinks: s.extras.navLinks.map((l) => ({ ...l, url: site })),
+        cta: s.extras.cta ? { ...s.extras.cta, url: site } : null,
+        quote: '',
+        disclaimer: brand.disclaimer || s.extras.disclaimer,
+      }
     }
     saveSignature(s)
     toast(`${t.name} added to your signatures`)

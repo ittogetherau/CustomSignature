@@ -1,34 +1,37 @@
 import { useRef, useState } from 'react'
-import { ImagePlus, RotateCcw, Trash2, Wand2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
+import { useImageUpload } from '../components/upload'
+import { ImagePlus, Trash2, Wand2 } from 'lucide-react'
 import { useStore } from '../store'
-import type { BrandKit, SocialKey } from '../types'
+import type { BrandKit, Employee, SocialKey } from '../types'
 import { FONTS, SOCIAL_LABEL, renderSignature } from '../lib/render'
 import { TEMPLATES } from '../lib/templates'
-import { brandColors, readImage } from '../lib/io'
+import { brandColors } from '../lib/io'
 import { employeeSignature } from './Team'
-import { ColorInput, Field, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
+import { ColorInput, Field, PageHeader, SigThumb, useToast } from '../components/ui'
 
 export default function Brand() {
   const store = useStore()
   const toast = useToast()
   const [b, setB] = useState<BrandKit>(store.brand)
-  const [resetOpen, setResetOpen] = useState(false)
+  const upload = useImageUpload()
+  const [uploading, setUploading] = useState(false)
   const file = useRef<HTMLInputElement>(null)
   const dirty = JSON.stringify(b) !== JSON.stringify(store.brand)
   const set = <K extends keyof BrandKit>(k: K, v: BrandKit[K]) => setB({ ...b, [k]: v })
 
-  const sample = store.employees[0]
-  const preview = sample ? renderSignature(employeeSignature({ ...sample, templateId: b.defaultTemplateId }, b, null), { campaigns: store.campaigns }) : ''
+  const sample: Employee = store.employees[0] ?? { id: 'preview', fullName: 'Alex Morgan', title: 'Your job title', department: '', email: `alex@${(b.website || 'company.com').replace(/^https?:\/\//, '')}`, phone: b.phone, photo: '', templateId: null, status: 'active', source: 'manual', externalId: null, updatedAt: Date.now() }
+  const preview = renderSignature(employeeSignature({ ...sample, templateId: b.defaultTemplateId }, b, null), { campaigns: store.campaigns })
 
   return (
     <>
       <PageHeader
         eyebrow="Company settings"
         title="Brand kit"
-        subtitle="Set it once. Every team signature pulls its logo, colours, links and legal text from here."
+        subtitle={store.role === 'member' ? 'Only workspace admins can change the brand kit.' : 'Set it once. Every team signature pulls its logo, colours, links and legal text from here.'}
         actions={<>
           <button className="btn btn-line" disabled={!dirty} onClick={() => setB(store.brand)}>Discard</button>
-          <button className="btn btn-ink" disabled={!dirty} onClick={() => { store.setBrand(b); toast('Brand kit saved — team signatures updated') }}>Save changes</button>
+          <button className="btn btn-ink" disabled={!dirty || store.role === 'member'} title={store.role === 'member' ? 'Only admins can change the brand kit' : undefined} onClick={() => { store.setBrand(b); toast('Brand kit saved — team signatures updated') }}>Save changes</button>
         </>}
       />
 
@@ -41,11 +44,11 @@ export default function Brand() {
                 {b.logo ? <img src={b.logo} alt="" className="size-full object-contain p-2" /> : <ImagePlus className="text-faint" />}
               </div>
               <div className="flex flex-wrap gap-2">
-                <button className="btn btn-line btn-sm" onClick={() => file.current?.click()}>{b.logo ? 'Replace logo' : 'Upload logo'}</button>
+                <button className="btn btn-line btn-sm" disabled={uploading} onClick={() => file.current?.click()}>{uploading ? <Loader2 size={14} className="animate-spin" /> : b.logo ? 'Replace logo' : 'Upload logo'}</button>
                 {b.logo && <button className="btn btn-ghost btn-sm" onClick={async () => { const c = await brandColors(b.logo); if (c.length) { setB({ ...b, primary: c[0], accent: c[1] ?? b.accent }); toast('Colours pulled from logo') } }}><Wand2 size={14} /> Match colours</button>}
                 {b.logo && <button className="btn btn-ghost btn-sm btn-icon" onClick={() => set('logo', '')} aria-label="Remove logo"><Trash2 size={14} /></button>}
               </div>
-              <input ref={file} type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (f) set('logo', await readImage(f, 360)) }} />
+              <input ref={file} type="file" accept="image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; setUploading(true); const u = await upload(f, 'logo', 480); setUploading(false); if (u) set('logo', u) }} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Company name"><input className="input" value={b.company} onChange={(e) => set('company', e.target.value)} /></Field>
@@ -79,8 +82,6 @@ export default function Brand() {
             <p className="mb-4 text-sm text-muted">Appended to every team signature.</p>
             <textarea className="input" rows={4} placeholder="This email and any attachments are confidential…" value={b.disclaimer} onChange={(e) => set('disclaimer', e.target.value)} />
           </section>
-
-          <button className="btn btn-ghost btn-sm text-muted" onClick={() => setResetOpen(true)}><RotateCcw size={14} /> Reset workspace to demo data</button>
         </div>
 
         <aside className="card sticky top-6 overflow-hidden">
@@ -88,15 +89,10 @@ export default function Brand() {
             <span className="text-sm font-semibold">Live team preview</span>
             <span className="text-xs text-muted">{sample?.fullName}</span>
           </div>
-          <div className="bg-white p-6">{preview && <SigThumb html={preview} align="left" />}</div>
+          <div className="bg-white p-6"><SigThumb html={preview} align="left" /></div>
           {dirty && <div className="border-t border-line bg-butter-soft px-5 py-2.5 text-xs font-medium text-[#6b4e0e]">Unsaved — {store.employees.length} team signatures will update when you save.</div>}
         </aside>
       </div>
-
-      <Modal open={resetOpen} onClose={() => setResetOpen(false)} title="Reset workspace?" subtitle="All signatures, people and campaigns go back to the demo set." width={440}
-        footer={<><button className="btn btn-line" onClick={() => setResetOpen(false)}>Cancel</button><button className="btn btn-ink" onClick={() => { store.reset(); setResetOpen(false); location.hash = '#/'; location.reload() }}>Reset</button></>}>
-        <p className="text-sm text-muted">This can't be undone.</p>
-      </Modal>
     </>
   )
 }

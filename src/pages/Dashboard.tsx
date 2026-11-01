@@ -1,12 +1,13 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { ArrowRight, ArrowUpRight, Copy, LayoutGrid, Megaphone, MousePointerClick, PenLine, Upload, Users, Eye, TrendingUp } from 'lucide-react'
-import { Area, AreaChart, ResponsiveContainer } from 'recharts'
+import { ArrowRight, Check, Copy, LayoutGrid, Megaphone, Palette, PenLine, Upload, Users, Megaphone as Mega, UserCheck } from 'lucide-react'
+import clsx from 'clsx'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 import { renderSignature } from '../lib/render'
-import { series } from '../lib/analytics'
-import { compact, copyRich, timeAgo } from '../lib/io'
+import { copyRich, timeAgo } from '../lib/io'
 import { templateById } from '../lib/templates'
 import { Avatar, SigThumb, useToast } from '../components/ui'
+import { MicrosoftLogo } from './Auth'
 
 function greeting() {
   const h = new Date().getHours()
@@ -14,32 +15,43 @@ function greeting() {
 }
 
 export default function Dashboard() {
-  const { signatures, employees, campaigns } = useStore()
+  const { signatures, employees, campaigns, brand, org, loading } = useStore()
+  const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
   const primary = signatures[0]
-  const first = primary?.fields.fullName.split(' ')[0] ?? 'there'
+  const name = (user?.user_metadata?.full_name as string | undefined) || (user?.user_metadata?.name as string | undefined) || ''
+  const first = name.split(' ')[0]
 
-  const imp = signatures.reduce((a, s) => a + s.stats.impressions, 0) + campaigns.reduce((a, c) => a + c.impressions, 0) / 4
-  const clicks = signatures.reduce((a, s) => a + s.stats.clicks, 0) + campaigns.reduce((a, c) => a + c.clicks, 0) / 4
+  const today = new Date().toISOString().slice(0, 10)
+  const live = campaigns.filter((c) => c.active && c.start <= today && (!c.end || c.end >= today))
   const covered = employees.filter((e) => e.templateId && e.status === 'active').length
   const coverage = employees.length ? Math.round((covered / employees.length) * 100) : 0
-  const data = series(14, imp / 2, clicks / 2)
-  const live = campaigns.find((c) => c.active)
+
+  const steps = [
+    { done: Boolean(brand.logo), label: 'Add your logo & brand colours', to: '/brand', icon: Palette },
+    { done: signatures.length > 0, label: 'Design your first signature', to: '/templates', icon: PenLine },
+    { done: employees.length > 0, label: 'Bring in your team', to: '/team', icon: Users, ms: true },
+    { done: campaigns.length > 0, label: 'Launch a banner campaign', to: '/campaigns', icon: Megaphone },
+  ]
+  const doneCount = steps.filter((s) => s.done).length
 
   const stats = [
-    { label: 'Impressions · 30d', value: compact(imp), delta: '+18%', icon: Eye, spark: data.map((d) => ({ v: d.impressions })) },
-    { label: 'Link clicks · 30d', value: compact(clicks), delta: '+24%', icon: MousePointerClick, spark: data.map((d) => ({ v: d.clicks })) },
-    { label: 'Click-through', value: `${((clicks / Math.max(imp, 1)) * 100).toFixed(1)}%`, delta: '+0.6pt', icon: TrendingUp, spark: data.map((d) => ({ v: d.clicks / Math.max(d.impressions, 1) })) },
+    { label: 'Signatures', value: signatures.length, icon: PenLine, to: '/signatures' },
+    { label: 'People', value: employees.length, icon: Users, to: '/team' },
+    { label: 'Team coverage', value: `${coverage}%`, icon: UserCheck, to: '/team' },
+    { label: 'Live campaigns', value: live.length, icon: Mega, to: '/campaigns' },
   ]
+
+  if (loading) return <div className="space-y-5">{[0, 1, 2].map((k) => <div key={k} className="card h-32 animate-pulse bg-paper-2/60" />)}</div>
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div className="animate-rise">
-          <div className="eyebrow mb-2">{new Date().toLocaleDateString('en', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
-          <h1 className="h-display text-[38px] leading-[1.05] md:text-[46px]">{greeting()}, {first}.</h1>
-          <p className="mt-2 text-[15px] text-muted">Your signatures were seen <strong className="font-semibold text-ink">{compact(imp)}</strong> times this month.</p>
+          <div className="eyebrow mb-2">{org.name}</div>
+          <h1 className="h-display text-[38px] leading-[1.05] md:text-[46px]">{greeting()}{first ? `, ${first}` : ''}.</h1>
+          <p className="mt-2 text-[15px] text-muted">{doneCount < steps.length ? "Let's get your company's signatures set up." : 'Your workspace at a glance.'}</p>
         </div>
         <div className="flex gap-2">
           <Link to="/team" className="btn btn-line"><Users size={16} /> Roll out to team</Link>
@@ -47,17 +59,53 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {doneCount < steps.length && (
+        <section className="card overflow-hidden">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-5 py-4">
+            <div>
+              <h2 className="h-display text-xl">Getting started</h2>
+              <p className="text-sm text-muted">{doneCount} of {steps.length} done — about five minutes in total.</p>
+            </div>
+            <div className="h-2 w-40 overflow-hidden rounded-full bg-paper-2"><div className="h-full rounded-full bg-pine transition-all" style={{ width: `${(doneCount / steps.length) * 100}%` }} /></div>
+          </div>
+          <div className="grid divide-y divide-line md:grid-cols-4 md:divide-x md:divide-y-0">
+            {steps.map(({ done, label, to, icon: Icon, ms }, k) => (
+              <Link key={label} to={to} className={clsx('group flex items-start gap-3 p-5 transition', done ? 'bg-pine-soft/30' : 'hover:bg-paper/60')}>
+                <span className={clsx('grid size-9 shrink-0 place-items-center rounded-full', done ? 'bg-pine text-white' : 'bg-paper-2 text-ink-3 group-hover:bg-clay group-hover:text-white')}>
+                  {done ? <Check size={16} strokeWidth={3} /> : <Icon size={16} />}
+                </span>
+                <span className="min-w-0">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-faint">Step {k + 1}</span>
+                  <span className={clsx('block text-sm font-semibold', done && 'text-muted line-through decoration-1')}>{label}</span>
+                  {ms && !done && <span className="mt-1 flex items-center gap-1.5 text-xs text-muted"><MicrosoftLogo size={11} /> Microsoft 365 or CSV</span>}
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {stats.map(({ label, value, icon: Icon, to }, i) => (
+          <Link key={label} to={to} className="card flex animate-rise items-center gap-4 p-5 transition hover:shadow-lift" style={{ animationDelay: `${i * 50}ms` }}>
+            <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-paper-2 text-ink-3"><Icon size={19} /></div>
+            <div>
+              <div className="text-xs font-medium text-muted">{label}</div>
+              <div className="h-display text-[28px] leading-tight">{value}</div>
+            </div>
+          </Link>
+        ))}
+      </div>
+
       <div className="grid gap-5 lg:grid-cols-[1.45fr_1fr]">
-        {/* hero signature */}
-        {primary && (
-          <section className="card relative overflow-hidden">
+        {primary ? (
+          <section className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-              <div className="flex items-center gap-2.5">
-                <span className="relative flex size-2"><span className="absolute inline-flex size-full animate-ping rounded-full bg-pine opacity-60" /><span className="relative inline-flex size-2 rounded-full bg-pine" /></span>
+              <div className="min-w-0">
                 <span className="text-sm font-semibold">{primary.label}</span>
-                <span className="text-xs text-muted">· {templateById(primary.templateId).name} · edited {timeAgo(primary.updatedAt)}</span>
+                <span className="text-xs text-muted"> · {templateById(primary.templateId).name} · edited {timeAgo(primary.updatedAt)}</span>
               </div>
-              <div className="flex gap-1">
+              <div className="flex shrink-0 gap-1">
                 <button className="btn btn-ghost btn-sm" onClick={async () => { await copyRich(renderSignature(primary, { campaigns })); toast('Signature copied') }}><Copy size={14} /> Copy</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/editor/${primary.id}`)}>Edit <ArrowRight size={14} /></button>
               </div>
@@ -67,101 +115,72 @@ export default function Dashboard() {
               <div className="relative"><SigThumb html={renderSignature(primary, { campaigns })} /></div>
             </div>
           </section>
+        ) : (
+          <section className="card flex flex-col items-center justify-center px-6 py-14 text-center">
+            <span className="grid size-12 place-items-center rounded-2xl bg-clay-soft text-clay-ink"><PenLine /></span>
+            <h2 className="h-display mt-4 text-2xl">Design your first signature</h2>
+            <p className="mt-1 max-w-sm text-sm text-muted">Pick from {16} templates — your brand kit fills in the company details for you.</p>
+            <Link to="/templates" className="btn btn-ink mt-5">Browse templates <ArrowRight size={15} /></Link>
+          </section>
         )}
 
-        {/* stats */}
         <div className="grid gap-5">
-          {stats.map(({ label, value, delta, icon: Icon, spark }, i) => (
-            <div key={label} className="card flex animate-rise items-center gap-4 p-5" style={{ animationDelay: `${i * 60}ms` }}>
-              <div className="grid size-11 shrink-0 place-items-center rounded-xl bg-paper-2 text-ink-3"><Icon size={19} /></div>
-              <div className="min-w-0 flex-1">
-                <div className="text-xs font-medium text-muted">{label}</div>
-                <div className="flex items-baseline gap-2">
-                  <span className="h-display text-[28px] leading-tight">{value}</span>
-                  <span className="text-xs font-semibold text-pine">{delta}</span>
+          <section className="card p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="h-display text-xl">Team</h2>
+              <Link to="/team" className="text-xs font-semibold text-clay-ink hover:underline">Manage</Link>
+            </div>
+            {employees.length ? (
+              <>
+                <div className="mt-3 h-2 overflow-hidden rounded-full bg-paper-2"><div className="h-full rounded-full bg-pine" style={{ width: `${coverage}%` }} /></div>
+                <p className="mt-2 text-sm text-muted">{covered} of {employees.length} people have an on-brand signature.</p>
+                <div className="mt-4 flex -space-x-2">
+                  {employees.slice(0, 8).map((e) => <Avatar key={e.id} name={e.fullName} photo={e.photo} size={30} />)}
+                  {employees.length > 8 && <span className="grid size-[30px] place-items-center rounded-full bg-paper-2 text-[11px] font-semibold ring-2 ring-surface">+{employees.length - 8}</span>}
+                </div>
+              </>
+            ) : (
+              <div className="mt-3">
+                <p className="text-sm text-muted">Import your people to generate everyone's signature at once.</p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link to="/team?import=microsoft" className="btn btn-line btn-sm"><MicrosoftLogo size={13} /> Microsoft 365</Link>
+                  <Link to="/team?import=csv" className="btn btn-ghost btn-sm"><Upload size={14} /> CSV</Link>
                 </div>
               </div>
-              <div className="h-12 w-28 shrink-0">
-                <ResponsiveContainer>
-                  <AreaChart data={spark}>
-                    <defs><linearGradient id={`sp${i}`} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#e2643b" stopOpacity={0.35} /><stop offset="1" stopColor="#e2643b" stopOpacity={0} /></linearGradient></defs>
-                    <Area dataKey="v" stroke="#e2643b" strokeWidth={2} fill={`url(#sp${i})`} isAnimationActive={false} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+            )}
+          </section>
+
+          <section className="card p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="h-display text-xl">Campaigns</h2>
+              <Link to="/campaigns" className="text-xs font-semibold text-clay-ink hover:underline">All campaigns</Link>
             </div>
-          ))}
+            {live[0] ? (
+              <div className="mt-4 rounded-xl p-4 text-white" style={{ background: live[0].style === 'dark' ? `linear-gradient(120deg,#0f172a,${live[0].from})` : `linear-gradient(120deg,${live[0].from},${live[0].to})` }}>
+                <div className="text-[15px] font-bold leading-snug">{live[0].headline}</div>
+                <div className="mt-1 text-xs text-white/80">{live[0].subline}</div>
+              </div>
+            ) : (
+              <p className="mt-3 text-sm text-muted">No banner running. Promote an event or offer in every email your team sends.</p>
+            )}
+          </section>
+
+          <section className="card p-5">
+            <h2 className="h-display text-xl">Quick actions</h2>
+            <div className="mt-2 divide-y divide-line">
+              {[
+                { to: '/templates', icon: LayoutGrid, t: 'Browse templates' },
+                { to: '/brand', icon: Palette, t: 'Update brand kit' },
+              ].map(({ to, icon: Icon, t }) => (
+                <Link key={to} to={to} className="group flex items-center gap-3 py-2.5">
+                  <span className="grid size-8 place-items-center rounded-lg bg-clay-soft text-clay-ink transition group-hover:bg-clay group-hover:text-white"><Icon size={15} /></span>
+                  <span className="flex-1 text-sm font-semibold">{t}</span>
+                  <ArrowRight size={15} className="text-faint transition group-hover:translate-x-0.5 group-hover:text-ink" />
+                </Link>
+              ))}
+            </div>
+          </section>
         </div>
-      </div>
-
-      <div className="grid gap-5 lg:grid-cols-3">
-        {/* team coverage */}
-        <section className="card p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="h-display text-xl">Team coverage</h2>
-            <Link to="/team" className="text-xs font-semibold text-clay-ink hover:underline">Manage</Link>
-          </div>
-          <div className="mt-4 flex items-center gap-5">
-            <div className="relative size-24 shrink-0">
-              <svg viewBox="0 0 36 36" className="size-full -rotate-90">
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#efe9dd" strokeWidth="3.4" />
-                <circle cx="18" cy="18" r="15.9" fill="none" stroke="#0f766e" strokeWidth="3.4" strokeLinecap="round" strokeDasharray={`${coverage} 100`} pathLength={100} />
-              </svg>
-              <div className="absolute inset-0 grid place-items-center"><span className="h-display text-2xl">{coverage}%</span></div>
-            </div>
-            <div className="space-y-1.5 text-sm">
-              <div className="flex items-center gap-2"><span className="size-2 rounded-full bg-pine" /> {covered} on brand</div>
-              <div className="flex items-center gap-2"><span className="size-2 rounded-full bg-butter" /> {employees.filter((e) => e.status === 'outdated').length} outdated</div>
-              <div className="flex items-center gap-2"><span className="size-2 rounded-full bg-line-2" /> {employees.length - covered} not set up</div>
-            </div>
-          </div>
-          <div className="mt-5 flex -space-x-2">
-            {employees.slice(0, 8).map((e) => <Avatar key={e.id} name={e.fullName} photo={e.photo} size={30} />)}
-            {employees.length > 8 && <span className="grid size-[30px] place-items-center rounded-full bg-paper-2 text-[11px] font-semibold ring-2 ring-surface">+{employees.length - 8}</span>}
-          </div>
-        </section>
-
-        {/* live campaign */}
-        <section className="card flex flex-col p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="h-display text-xl">Live campaign</h2>
-            <Link to="/campaigns" className="text-xs font-semibold text-clay-ink hover:underline">All campaigns</Link>
-          </div>
-          {live ? (
-            <>
-              <div className="mt-4 rounded-xl p-4 text-white" style={{ background: live.style === 'dark' ? `linear-gradient(120deg,#0f172a,${live.from})` : `linear-gradient(120deg,${live.from},${live.to})` }}>
-                <div className="text-[15px] font-bold leading-snug">{live.headline}</div>
-                <div className="mt-1 text-xs text-white/80">{live.subline}</div>
-              </div>
-              <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-                <div><div className="h-display text-lg">{compact(live.impressions)}</div><div className="text-[11px] text-muted">views</div></div>
-                <div><div className="h-display text-lg">{compact(live.clicks)}</div><div className="text-[11px] text-muted">clicks</div></div>
-                <div><div className="h-display text-lg">{((live.clicks / Math.max(live.impressions, 1)) * 100).toFixed(1)}%</div><div className="text-[11px] text-muted">CTR</div></div>
-              </div>
-            </>
-          ) : (
-            <p className="mt-4 text-sm text-muted">No banner running. Promote an event or offer in every email you send.</p>
-          )}
-        </section>
-
-        {/* quick actions */}
-        <section className="card p-5">
-          <h2 className="h-display text-xl">Quick actions</h2>
-          <div className="mt-3 divide-y divide-line">
-            {[
-              { to: '/templates', icon: LayoutGrid, t: 'Browse 16 templates', d: 'Animated, corporate, minimal…' },
-              { to: '/team', icon: Upload, t: 'Bulk import from CSV', d: 'Generate a signature per person' },
-              { to: '/campaigns', icon: Megaphone, t: 'Launch a banner', d: 'Schedule by department' },
-              { to: '/brand', icon: ArrowUpRight, t: 'Update brand kit', d: 'Logo, colours and legal text' },
-            ].map(({ to, icon: Icon, t, d }) => (
-              <Link key={to} to={to} className="group flex items-center gap-3 py-3">
-                <span className="grid size-9 place-items-center rounded-lg bg-clay-soft text-clay-ink transition group-hover:bg-clay group-hover:text-white"><Icon size={16} /></span>
-                <span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{t}</span><span className="block text-xs text-muted">{d}</span></span>
-                <ArrowRight size={15} className="text-faint transition group-hover:translate-x-0.5 group-hover:text-ink" />
-              </Link>
-            ))}
-          </div>
-        </section>
       </div>
     </div>
   )
