@@ -1,4 +1,5 @@
 import type { Campaign, Signature, SocialKey } from '../types'
+import { CLASSIC, type Block, type ClassicRecipe } from './classic'
 
 // Email clients ignore <head> styles and most modern CSS, so every template is
 // built from nested tables with inline styles. Animation classes are progressive
@@ -81,7 +82,7 @@ const motion = (c: Ctx) => (c.anim ? c.s.extras.motion : undefined)
 // Photo GIFs include a margin for rings/bubbles; the photo itself is this share of the image.
 const PHOTO_FILL = 0.66
 
-function photo(c: Ctx, size: number, opts: { ring?: boolean; glow?: boolean; border?: string } = {}) {
+function photo(c: Ctx, size: number, opts: { ring?: boolean; glow?: boolean; border?: string; pad?: number } = {}) {
   const { fields, design } = c.s
   const m = motion(c)
   if (m?.photoGif && m.photoEffect !== 'none') {
@@ -92,7 +93,7 @@ function photo(c: Ctx, size: number, opts: { ring?: boolean; glow?: boolean; bor
   const cls = [opts.glow && c.anim ? 'sc-glow' : '', opts.ring && c.anim ? 'sc-ring' : ''].filter(Boolean).join(' ')
   const border = opts.border ?? (opts.ring ? `3px solid ${design.primary}` : 'none')
   const inner = fields.photo
-    ? `<img src="${esc(fields.photo)}" width="${size}" height="${size}" alt="${esc(fields.fullName)}" style="display:block;width:${size}px;height:${size}px;border-radius:${r};object-fit:cover;border:${border};" />`
+    ? `<img src="${esc(fields.photo)}" width="${size}" height="${size}" alt="${esc(fields.fullName)}" style="display:block;width:${size}px;height:${size}px;border-radius:${r};object-fit:cover;border:${border};padding:${opts.pad ?? 0}px;background:#ffffff;" />`
     : `<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td width="${size}" height="${size}" align="center" valign="middle" bgcolor="${design.primary}" style="width:${size}px;height:${size}px;border-radius:${r};background:${design.primary};background-image:linear-gradient(135deg,${design.primary},${design.accent});color:#ffffff;font-family:${c.font};font-size:${Math.round(size / 2.6)}px;font-weight:700;border:${border};">${esc(initials(fields.fullName))}</td></tr></table>`
   return cls ? `<div class="${cls}" style="display:inline-block;border-radius:${r};">${inner}</div>` : inner
 }
@@ -588,6 +589,140 @@ ${contactList(c, { color: tint(text, 0.15), iconColor: primary })}
     )
   },
 }
+
+
+// ---------- classic layout engine ----------
+
+const CONTACT_META: Record<string, { label: string; letter: string; icon: string }> = {
+  phone: { label: 'Phone', letter: 'P', icon: 'phone' },
+  iphone: { label: 'Mobile', letter: 'M', icon: 'iphone' },
+  'new-post': { label: 'Email', letter: 'E', icon: 'mail' },
+  globe: { label: 'Website', letter: 'W', icon: 'globe' },
+  marker: { label: 'Address', letter: 'A', icon: 'marker' },
+}
+const CLASSIC_COLOR_ICON: Record<SocialKey, string> = { linkedin: 'linkedin', x: 'twitterx', instagram: 'instagram-new', facebook: 'facebook-new', youtube: 'youtube-play', tiktok: 'tiktok', github: 'github' }
+
+function classic(c: Ctx, r: ClassicRecipe) {
+  const { primary, text } = c.s.design
+  const f = c.s.fields
+  const muted = '#6b7280'
+  const ink = tint(text, 0.12)
+  const nameCol = r.nameColor === 'accent' ? primary : text
+  const titleCol = r.titleColor === 'accent' ? primary : muted
+  const ruleCol = r.ruleColor === 'accent' ? primary : r.ruleColor === 'ink' ? text : '#e4e5e7'
+  const items = contacts(c)
+  const td = (inner: string, style = '') => `<td valign="middle" style="${style}">${inner}</td>`
+  const T0 = '<table cellpadding="0" cellspacing="0" border="0" role="presentation"'
+
+  const photoHtml = () =>
+    r.photo === 'ring' ? photo(c, r.photoSize, { border: `5px solid ${primary}` })
+      : r.photo === 'thinring' ? photo(c, r.photoSize, { border: `2px solid ${primary}`, pad: 3 })
+        : photo(c, r.photoSize)
+
+  const nameHtml = (align: string) => {
+    const full = r.nameUpper ? f.fullName.toUpperCase() : f.fullName
+    const parts = full.split(' ')
+    const shown = r.nameStacked && parts.length > 1 ? `${esc(parts[0])}<br />${esc(parts.slice(1).join(' '))}` : esc(full)
+    const role = [f.title, f.company].filter(Boolean).map(esc).join(' - ')
+    return `<div style="font-family:${c.font};font-size:${c.base + 6}px;line-height:1.15;font-weight:700;letter-spacing:${r.nameUpper ? 0.4 : 0}px;color:${nameCol};text-align:${align};">${shown}${badge(c, 14)}</div>`
+      + (role ? `<div style="font-family:${c.font};font-size:${c.base - 1}px;line-height:1.4;color:${titleCol};padding-top:3px;text-align:${align};">${role}</div>` : '')
+      + (f.logo ? `<div style="padding-top:8px;">${logo(c, 24)}</div>` : '')
+  }
+
+  const link = (it: ContactItem) => `<a href="${esc(it.href)}" style="color:${ink};text-decoration:none;">${esc(it.label)}</a>`
+  const ico = (name: string, sz = 13) => `<img src="${icon(CONTACT_META[name].icon, primary, true)}" width="${sz}" height="${sz}" alt="" style="display:inline-block;vertical-align:-2px;width:${sz}px;height:${sz}px;border:0;" />`
+  const rowStyle = `font-family:${c.font};font-size:${c.base - 1}px;line-height:1.6;color:${ink};`
+
+  const contactsHtml = () => {
+    if (!items.length) return ''
+    switch (r.contacts) {
+      case 'letter': {
+        const by = (k: string) => items.find((i) => i.icon === k)
+        const L = (it: ContactItem) => `<b style="color:${primary};">${CONTACT_META[it.icon].letter}:</b> ${link(it)}`
+        const first = [by('new-post'), by('globe')].filter(Boolean) as ContactItem[]
+        const rest = items.filter((i) => !first.includes(i))
+        return [first.length ? `<div style="${rowStyle}">${first.map(L).join('&nbsp;&nbsp;')}</div>` : '', ...rest.map((i) => `<div style="${rowStyle}">${L(i)}</div>`)].join('')
+      }
+      case 'label':
+        return `${T0}>${items.map((i) => `<tr><td valign="top" style="${rowStyle}font-weight:700;color:${primary};padding-right:6px;white-space:nowrap;">${CONTACT_META[i.icon].label}</td><td valign="top" style="${rowStyle}color:${primary};padding-right:6px;">:</td><td valign="top" style="${rowStyle}">${link(i)}</td></tr>`).join('')}</table>`
+      case 'icon':
+        return `${T0}>${items.map((i) => `<tr><td valign="top" style="padding:3px 8px 0 0;">${ico(i.icon)}</td><td valign="top" style="${rowStyle}">${link(i)}</td></tr>`).join('')}</table>`
+      case 'plain':
+        return items.map((i) => `<div style="${rowStyle}">${link(i)}</div>`).join('')
+      case 'inline': {
+        const top = items.filter((i) => i.icon !== 'marker')
+        const addr = items.find((i) => i.icon === 'marker')
+        return `<div style="${rowStyle}">${top.map((i) => `${ico(i.icon, 12)}&nbsp;${link(i)}`).join(`<span style="color:${primary};">&nbsp;&nbsp;•&nbsp;&nbsp;</span>`)}</div>` + (addr ? `<div style="${rowStyle}">${ico('marker', 12)}&nbsp;${link(addr)}</div>` : '')
+      }
+      case 'grid': {
+        const rows: ContactItem[][] = []
+        for (let i = 0; i < items.length; i += 2) rows.push(items.slice(i, i + 2))
+        return `${T0}>${rows.map((row) => `<tr>${row.map((i) => `<td valign="top" style="padding:2px 18px 2px 0;"><table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td valign="top" style="padding:3px 6px 0 0;">${ico(i.icon)}</td><td style="${rowStyle}">${link(i)}</td></tr></table></td>`).join('')}</tr>`).join('')}</table>`
+      }
+    }
+  }
+
+  const socialsHtml = (align = 'left') => {
+    const entries = (Object.entries(c.s.socials) as [SocialKey, string][]).filter(([, v]) => v)
+    if (!entries.length) return ''
+    const m = motion(c)
+    const cells = entries.map(([k, v]) => {
+      let inner: string
+      if (m?.animateIcons && m.iconGifs?.[k]) inner = `<img src="${esc(m.iconGifs[k]!)}" width="22" height="22" alt="${SOCIAL_LABEL[k]}" style="display:block;border:0;" />`
+      else if (r.socials === 'color') inner = `<img src="https://img.icons8.com/color/48/${CLASSIC_COLOR_ICON[k]}.png" width="22" height="22" alt="${SOCIAL_LABEL[k]}" style="display:block;border:0;" />`
+      else if (r.socials === 'dark') inner = `<img src="${icon(SOCIAL_ICON[k], '#222222')}" width="18" height="18" alt="${SOCIAL_LABEL[k]}" style="display:block;border:0;" />`
+      else {
+        const col = r.socials === 'accent' ? primary : muted
+        inner = `<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td width="20" height="20" align="center" valign="middle" style="width:20px;height:20px;border:1px solid ${r.socials === 'accent' ? primary : '#d1d5db'};border-radius:4px;"><img src="${icon(SOCIAL_ICON[k], col)}" width="12" height="12" alt="${SOCIAL_LABEL[k]}" style="display:block;border:0;" /></td></tr></table>`
+      }
+      return `<td style="padding:0 5px 0 0;"><a href="${esc(url(v))}" class="${c.anim ? 'sc-lift' : ''}" style="display:inline-block;text-decoration:none;">${inner}</a></td>`
+    }).join('')
+    return `<table cellpadding="0" cellspacing="0" border="0" role="presentation" align="${align}" style="margin-top:8px;"><tr>${cells}</tr></table>`
+  }
+
+  const block = (b: Block, align: string) =>
+    b === 'photo' ? `<div style="text-align:${align};">${photoHtml()}</div>`
+      : b === 'name' ? nameHtml(align)
+        : b === 'bar' ? `<div style="width:56px;height:3px;background:${primary};margin:8px 0 10px;line-height:3px;font-size:0;">&nbsp;</div>`
+          : b === 'contacts' ? `<div style="padding-top:2px;">${contactsHtml()}</div>`
+            : socialsHtml(align === 'center' ? 'center' : 'left')
+
+  const cellsRow = (cells: Block[][], dividers: boolean) => {
+    const out: string[] = []
+    cells.forEach((cell, i) => {
+      const align = cell.includes('photo') && cell.length <= 2 && !cell.includes('contacts') ? 'center' : 'left'
+      // Dividers are a cell border: it always spans the row height, in every mail client.
+      const edge = i === 0 ? '' : dividers ? `border-left:2px solid ${primary};padding-left:14px;` : 'padding-left:18px;'
+      const trail = dividers && i < cells.length - 1 ? 'padding-right:14px;' : ''
+      out.push(td(cell.map((b) => block(b, align)).join(''), `text-align:${align};${edge}${trail}`))
+    })
+    return `${T0}><tr>${out.join('')}</tr></table>`
+  }
+
+  let body = ''
+  if (r.layout === 'header') {
+    const a = r.headerAlign ?? 'left'
+    const head = [
+      r.headerPhoto === 'left' ? td(photoHtml(), 'padding-right:14px;') : '',
+      td(nameHtml(r.headerPhoto ? 'left' : a)),
+      r.headerPhoto === 'right' ? td(photoHtml(), 'padding-left:14px;') : '',
+    ].join('')
+    body += `<tr><td>${T0} width="100%"><tr><td align="${a}">${T0}><tr>${head}</tr></table></td>${r.headerSocials ? `<td align="right" valign="middle">${socialsHtml('right')}</td>` : ''}</tr></table></td></tr>`
+    if (r.rule === 'header') body += `<tr><td style="padding-top:10px;"><div style="height:${r.ruleWeight ?? 2}px;background:${ruleCol};line-height:0;font-size:0;">&nbsp;</div></td></tr>`
+    body += `<tr><td style="padding-top:10px;">${cellsRow(r.cells, false)}</td></tr>`
+  } else {
+    body += `<tr><td>${cellsRow(r.cells, Boolean(r.dividers))}</td></tr>`
+  }
+  if (r.rule === 'bottom') body += `<tr><td style="padding-top:12px;"><div style="height:${r.ruleWeight ?? 2}px;background:${ruleCol};line-height:0;font-size:0;">&nbsp;</div></td></tr>`
+  if (c.s.extras.cta) body += `<tr><td style="padding-top:12px;">${ctaButton(c, primary)}</td></tr>`
+
+  const disc = c.s.extras.disclaimer
+    ? `<tr><td style="padding-top:12px;"><div style="border-top:1px solid #e4e5e7;padding-top:8px;font-family:${c.font};font-size:${Math.max(9, c.base - 3)}px;line-height:1.55;color:#80838a;max-width:560px;">${esc(c.s.extras.disclaimer)}</div></td></tr>`
+    : ''
+  return wrap(c, body + banner(c, 560) + disc, 'max-width:600px;')
+}
+
+for (const r of CLASSIC) T[r.id] = (c) => classic(c, r)
 
 // Shared animation styles. Kept in the exported HTML so clients that honour
 // <style> blocks get the motion; inline styles remain the source of truth.

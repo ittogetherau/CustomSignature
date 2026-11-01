@@ -5,7 +5,7 @@ import { useStore } from '../store'
 import { useAuth } from '../auth'
 import { renderSignature } from '../lib/render'
 import { copyRich, timeAgo } from '../lib/io'
-import { templateById } from '../lib/templates'
+import { TEMPLATES, templateById } from '../lib/templates'
 import { Avatar, SigThumb, useToast } from '../components/ui'
 import { MicrosoftLogo } from './Auth'
 
@@ -119,7 +119,7 @@ export default function Dashboard() {
           <section className="card flex flex-col items-center justify-center px-6 py-14 text-center">
             <span className="grid size-12 place-items-center rounded-2xl bg-clay-soft text-clay-ink"><PenLine /></span>
             <h2 className="h-display mt-4 text-2xl">Design your first signature</h2>
-            <p className="mt-1 max-w-sm text-sm text-muted">Pick from {16} templates — your brand kit fills in the company details for you.</p>
+            <p className="mt-1 max-w-sm text-sm text-muted">Pick from {TEMPLATES.length} templates — your brand kit fills in the company details for you.</p>
             <Link to="/templates" className="btn btn-ink mt-5">Browse templates <ArrowRight size={15} /></Link>
           </section>
         )}

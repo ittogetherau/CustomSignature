@@ -1,4 +1,5 @@
 import type { Signature, SignatureDesign, SignatureExtras, SignatureFields } from '../types'
+import { CLASSIC } from './classic'
 
 export interface TemplateMeta {
   id: string
@@ -12,7 +13,7 @@ export interface TemplateMeta {
   sample?: Partial<SignatureFields>
 }
 
-export const CATEGORIES = ['All', 'Modern', 'Corporate', 'Creative', 'Real Estate', 'Healthcare', 'Finance', 'Legal', 'Education', 'Minimal', 'Marketing']
+export const CATEGORIES = ['All', 'Classic', 'Modern', 'Corporate', 'Creative', 'Real Estate', 'Healthcare', 'Finance', 'Legal', 'Education', 'Minimal', 'Marketing']
 
 export const TEMPLATES: TemplateMeta[] = [
   {
@@ -124,6 +125,23 @@ export const TEMPLATES: TemplateMeta[] = [
     design: { primary: '#059669', accent: '#059669', text: '#111827', size: 'sm' },
   },
 ]
+
+const CONFIDENTIAL = 'The content of this email is confidential and intended for the recipient specified in message only. It is strictly forbidden to share any part of this message with any third party without the sender\u2019s written consent. If you received this message by mistake, please reply to it and then delete it.'
+
+// Classic layouts come from recipes rendered by one engine (see classic.ts).
+TEMPLATES.push(
+  ...CLASSIC.map((r): TemplateMeta => ({
+    id: r.id,
+    name: r.name,
+    tagline: r.tagline,
+    categories: ['Classic', 'Corporate'],
+    pro: false,
+    animated: false,
+    design: { primary: r.primary, accent: r.primary, text: '#18191b', iconStyle: 'filled', photoShape: r.photo === 'square' ? 'square' : r.photo === 'rounded' ? 'rounded' : 'circle' },
+    extras: { disclaimer: CONFIDENTIAL },
+    sample: { title: 'Marketing Head', company: 'Northwind', address: 'Level 4, 120 Harbour St, Sydney NSW 2000' },
+  })),
+)
 
 export const templateById = (id: string) => TEMPLATES.find((t) => t.id === id) ?? TEMPLATES[0]
 
