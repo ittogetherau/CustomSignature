@@ -183,7 +183,7 @@ export default function Editor() {
                 </div>
                 <button className="btn btn-ghost btn-sm mt-4 w-full border border-dashed border-line-2" onClick={() => {
                   const b = store.brand
-                  setSig({ ...sig, fields: { ...sig.fields, company: b.company, website: b.website, address: b.address || sig.fields.address, logo: b.logo || sig.fields.logo }, socials: { ...b.socials, ...sig.socials }, design: { ...sig.design, primary: b.primary, accent: b.accent, font: b.font }, extras: { ...sig.extras, disclaimer: b.disclaimer || sig.extras.disclaimer } })
+                  setSig({ ...sig, fields: { ...sig.fields, company: b.company, website: b.website, address: b.address || sig.fields.address, logo: b.logo || sig.fields.logo, logoLight: b.logoLight || sig.fields.logoLight }, socials: { ...b.socials, ...sig.socials }, design: { ...sig.design, primary: b.primary, accent: b.accent, font: b.font }, extras: { ...sig.extras, disclaimer: b.disclaimer || sig.extras.disclaimer } })
                   toast('Brand kit applied')
                 }}><Wand2 size={14} /> Fill from brand kit</button>
               </Section>

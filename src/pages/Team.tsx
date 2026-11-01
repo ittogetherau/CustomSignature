@@ -28,7 +28,7 @@ export function employeeSignature(e: Employee, brand: ReturnType<typeof useStore
   const meta = templateById(e.templateId ?? brand.defaultTemplateId)
   return {
     id: e.id, label: e.fullName, templateId: meta.id,
-    fields: { fullName: e.fullName, title: e.title, department: e.department, company: brand.company, pronouns: '', phone: e.phone || brand.phone, mobile: '', email: e.email, website: brand.website, address: '', photo: e.photo, logo: brand.logo },
+    fields: { fullName: e.fullName, title: e.title, department: e.department, company: brand.company, pronouns: '', phone: e.phone || brand.phone, mobile: '', email: e.email, website: brand.website, address: '', photo: e.photo, logo: brand.logo, logoLight: brand.logoLight ?? '' },
     socials: brand.socials,
     design: { primary: brand.primary, accent: brand.accent, text: meta.design.text ?? '#0f172a', font: brand.font, photoShape: meta.design.photoShape ?? 'circle', size: 'md', iconStyle: meta.design.iconStyle ?? 'filled' },
     extras: { ...DEFAULT_EXTRAS, animations: meta.animated, verified: false, disclaimer: brand.disclaimer, campaignId },

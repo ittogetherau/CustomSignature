@@ -18,6 +18,8 @@ export interface SignatureFields {
   address: string
   photo: string
   logo: string
+  /** White/light logo for dark backgrounds (falls back to `logo` on a white chip). */
+  logoLight?: string
 }
 
 export interface SignatureDesign {
@@ -129,7 +131,14 @@ export interface Organization {
 export interface BrandKit {
   company: string
   website: string
+  /** Primary, full-colour logo. */
   logo: string
+  /** White/light version for dark backgrounds. */
+  logoLight?: string
+  /** Black/dark version for light backgrounds. */
+  logoDark?: string
+  /** Icon-only mark for small spaces. */
+  logoMark?: string
   primary: string
   accent: string
   font: string

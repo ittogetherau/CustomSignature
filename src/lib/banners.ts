@@ -18,6 +18,8 @@ export interface BannerData {
   to: string
   accent: string
   logo: HTMLImageElement | null
+  /** Draw the logo on a white chip (primary logo on a dark design). */
+  logoChip?: boolean
   company: string
 }
 
@@ -182,8 +184,7 @@ function drawCopy(g: Painter, d: BannerData, tpl: BannerTemplate, x = 28) {
   if (d.logo) {
     const h = 22, w = Math.min(120, (d.logo.width / d.logo.height) * h)
     c.save()
-    c.fillStyle = 'rgba(255,255,255,0.94)'
-    c.beginPath(); c.roundRect(x - 6, y - 5, w + 12, h + 10, 8); c.fill()
+    if (d.logoChip !== false) { c.fillStyle = 'rgba(255,255,255,0.94)'; c.beginPath(); c.roundRect(x - 6, y - 5, w + 12, h + 10, 8); c.fill() }
     c.drawImage(d.logo, x, y, w, h)
     c.restore()
     y += h + 16

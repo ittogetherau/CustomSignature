@@ -59,6 +59,17 @@ export default function Brand() {
           </section>
 
           <section className="card p-5">
+            <h2 className="h-display mb-1 text-xl">Logo variations</h2>
+            <p className="mb-4 text-sm text-muted">Upload versions for different backgrounds so your logo is always visible. Inkwell picks the right one automatically — dark banners and dark signature styles use the light version.</p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <LogoSlot label="For dark backgrounds" hint="White or light, transparent PNG" bg="dark" value={b.logoLight ?? ''} onChange={(v) => set('logoLight', v)} name="logo-light" />
+              <LogoSlot label="For light backgrounds" hint="Black or dark, transparent PNG" bg="light" value={b.logoDark ?? ''} onChange={(v) => set('logoDark', v)} name="logo-dark" />
+              <LogoSlot label="Icon / mark only" hint="Square symbol for small spaces" bg="check" value={b.logoMark ?? ''} onChange={(v) => set('logoMark', v)} name="logo-mark" />
+            </div>
+            {!b.logoLight && b.logo && <p className="mt-3 text-xs text-muted">Without a light version, your primary logo is shown on a small white panel on dark designs.</p>}
+          </section>
+
+          <section className="card p-5">
             <h2 className="h-display mb-4 text-xl">Look & feel</h2>
             <div className="grid gap-3 sm:grid-cols-2">
               <ColorInput label="Primary colour" value={b.primary} onChange={(v) => set('primary', v)} />
@@ -100,5 +111,26 @@ export default function Brand() {
         </aside>
       </div>
     </>
+  )
+}
+
+function LogoSlot({ label, hint, bg, value, onChange, name }: { label: string; hint: string; bg: 'dark' | 'light' | 'check'; value: string; onChange: (v: string) => void; name: string }) {
+  const upload = useImageUpload()
+  const input = useRef<HTMLInputElement>(null)
+  const [busy, setBusy] = useState(false)
+  const surface = bg === 'dark' ? 'bg-ink' : bg === 'light' ? 'bg-white' : 'bg-[linear-gradient(45deg,#e7e0d4_25%,transparent_25%,transparent_75%,#e7e0d4_75%),linear-gradient(45deg,#e7e0d4_25%,transparent_25%,transparent_75%,#e7e0d4_75%)] bg-[length:14px_14px] bg-[position:0_0,7px_7px] bg-white'
+  return (
+    <div>
+      <div className={`grid h-24 place-items-center overflow-hidden rounded-xl border border-line ${surface}`}>
+        {value ? <img src={value} alt="" className="max-h-16 max-w-[80%] object-contain" /> : <span className={`text-xs ${bg === 'dark' ? 'text-paper/50' : 'text-faint'}`}>No logo yet</span>}
+      </div>
+      <div className="mt-2 text-sm font-semibold">{label}</div>
+      <div className="text-xs text-muted">{hint}</div>
+      <div className="mt-2 flex gap-1.5">
+        <button className="btn btn-line btn-sm" disabled={busy} onClick={() => input.current?.click()}>{busy ? <Loader2 size={13} className="animate-spin" /> : value ? 'Replace' : 'Upload'}</button>
+        {value && <button className="btn btn-ghost btn-sm btn-icon" aria-label="Remove" onClick={() => onChange('')}><Trash2 size={13} /></button>}
+      </div>
+      <input ref={input} type="file" accept="image/png,image/svg+xml,image/webp,image/*" hidden onChange={async (e) => { const f = e.target.files?.[0]; if (!f) return; setBusy(true); const u = await upload(f, name, 480); setBusy(false); if (u) onChange(u) }} />
+    </div>
   )
 }

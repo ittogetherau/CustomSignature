@@ -55,7 +55,8 @@ export function readImage(file: File, max = 240): Promise<string> {
         canvas.width = Math.round(img.width * scale)
         canvas.height = Math.round(img.height * scale)
         canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
-        resolve(canvas.toDataURL(file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.88))
+        // Keep transparency for formats that can carry it (logos); photos go to JPEG.
+        resolve(canvas.toDataURL(/image\/(png|webp|gif)/.test(file.type) ? 'image/png' : 'image/jpeg', 0.88))
       }
       img.onerror = reject
       img.src = reader.result as string

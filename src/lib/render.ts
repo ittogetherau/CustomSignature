@@ -100,12 +100,17 @@ function photo(c: Ctx, size: number, opts: { ring?: boolean; glow?: boolean; bor
   return cls ? `<div class="${cls}" style="display:inline-block;border-radius:${r};">${inner}</div>` : inner
 }
 
-function logo(c: Ctx, height: number, invert = false) {
+/** Logo for this spot. On dark backgrounds use the light variant, or put the primary logo on a white chip so it stays visible. */
+function logo(c: Ctx, height: number, onDark = false) {
   const { fields, design } = c.s
+  const img = (src: string) => `<img src="${esc(src)}" height="${height}" alt="${esc(fields.company)}" class="${c.anim ? 'sc-float' : ''}" style="display:block;height:${height}px;width:auto;max-width:180px;border:0;" />`
+  if (onDark && fields.logoLight) return img(fields.logoLight)
   if (fields.logo)
-    return `<img src="${esc(fields.logo)}" height="${height}" alt="${esc(fields.company)}" class="${c.anim ? 'sc-float' : ''}" style="display:block;height:${height}px;width:auto;max-width:180px;border:0;" />`
+    return onDark
+      ? `<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td bgcolor="#ffffff" style="background:#ffffff;border-radius:8px;padding:4px 8px;">${img(fields.logo)}</td></tr></table>`
+      : img(fields.logo)
   if (!fields.company) return ''
-  return `<span class="${c.anim ? 'sc-float' : ''}" style="display:inline-block;font-family:${c.font};font-size:${Math.round(height * 0.5)}px;font-weight:800;letter-spacing:-0.5px;color:${invert ? '#ffffff' : design.primary};">${esc(fields.company)}</span>`
+  return `<span class="${c.anim ? 'sc-float' : ''}" style="display:inline-block;font-family:${c.font};font-size:${Math.round(height * 0.5)}px;font-weight:800;letter-spacing:-0.5px;color:${onDark ? '#ffffff' : design.primary};">${esc(fields.company)}</span>`
 }
 
 function badge(c: Ctx, size = 15) {
@@ -400,7 +405,7 @@ ${banner(c)}${disclaimer(c)}`,
       `<tr><td style="border-radius:16px;border:1px solid #e2e8f0;overflow:hidden;">
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%"><tr><td bgcolor="${primary}" style="background:${primary};background-image:linear-gradient(110deg,${primary},${accent});padding:12px 16px;border-radius:16px 16px 0 0;">
 <table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%"><tr>
-<td valign="middle">${c.s.fields.logo ? logo(c, 24) : logo(c, 26, true)}</td>
+<td valign="middle">${logo(c, 24, true)}</td>
 <td valign="middle" align="right">${navBar(c, { bg: 'rgba(255,255,255,0.18)', color: '#ffffff' })}</td>
 </tr></table></td></tr></table>
 <table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>

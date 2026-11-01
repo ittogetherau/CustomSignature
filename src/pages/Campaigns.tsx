@@ -133,9 +133,10 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
     setSaving(true)
     try {
       await ensureBannerFonts()
-      const logo = c.design.showLogo && brand.logo ? await loadImage(brand.logo).catch(() => null) : null
+      const logoUrl = bannerLogo(tpl, brand).url
+      const logo = c.design.showLogo && logoUrl ? await loadImage(logoUrl).catch(() => null) : null
       const data = bannerData(c, brand, logo)
-      const key = assetKey([c.design, c.headline, c.subline, c.ctaLabel, c.from, c.to, c.design.showLogo ? brand.logo : ''])
+      const key = assetKey([c.design, c.headline, c.subline, c.ctaLabel, c.from, c.to, c.design.showLogo ? logoUrl : ''])
       let image = c.image, imageKey = c.imageKey
       if (key !== c.imageKey || !c.image) {
         const blob = c.design.animated && tpl.animated ? bannerGif(tpl, data) : await bannerJpeg(tpl, data)
@@ -245,8 +246,16 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
   )
 }
 
+/** The logo variation that reads best on this design, and whether it needs a white chip. */
+function bannerLogo(tpl: BannerTemplate | undefined, brand: ReturnType<typeof useStore>['brand']) {
+  if (!tpl) return { url: brand.logo, chip: true }
+  if (tpl.ink === 'light') return brand.logoLight ? { url: brand.logoLight, chip: false } : { url: brand.logo, chip: true }
+  return brand.logoDark ? { url: brand.logoDark, chip: false } : { url: brand.logo, chip: false }
+}
+
 function bannerData(c: Campaign, brand: ReturnType<typeof useStore>['brand'], logo: HTMLImageElement | null): BannerData {
-  return { headline: c.headline, subline: c.subline, cta: c.ctaLabel, eyebrow: c.design?.eyebrow ?? '', date: c.design?.date ?? '', from: c.from, to: c.to, accent: c.design?.accent ?? '#ffffff', logo, company: brand.company }
+  const chip = bannerLogo(bannerTemplate(c.design?.template), brand).chip
+  return { headline: c.headline, subline: c.subline, cta: c.ctaLabel, eyebrow: c.design?.eyebrow ?? '', date: c.design?.date ?? '', from: c.from, to: c.to, accent: c.design?.accent ?? '#ffffff', logo, logoChip: chip, company: brand.company }
 }
 
 /** Live canvas preview; animates when the design's animation is on. */
@@ -256,12 +265,13 @@ function LiveBanner({ tpl, campaign, scale = 1 }: { tpl: BannerTemplate; campaig
   const [logo, setLogo] = useState<HTMLImageElement | null>(null)
   const [fontsReady, setFontsReady] = useState(false)
   useEffect(() => { ensureBannerFonts().then(() => setFontsReady(true)) }, [])
+  const logoUrl = bannerLogo(tpl, brand).url
   useEffect(() => {
     let live = true
-    if (campaign.design?.showLogo && brand.logo) loadImage(brand.logo).then((i) => live && setLogo(i)).catch(() => live && setLogo(null))
+    if (campaign.design?.showLogo && logoUrl) loadImage(logoUrl).then((i) => live && setLogo(i)).catch(() => live && setLogo(null))
     else setLogo(null)
     return () => { live = false }
-  }, [campaign.design?.showLogo, brand.logo])
+  }, [campaign.design?.showLogo, logoUrl])
   useEffect(() => {
     const ctx = ref.current?.getContext('2d')
     if (!ctx) return

@@ -44,7 +44,7 @@ export default function Templates() {
       const fullName = (user?.user_metadata?.full_name as string) || (user?.user_metadata?.name as string) || ''
       const site = brand.website
       s.label = fullName ? `${fullName.split(' ')[0]} — ${t.name}` : `${t.name} signature`
-      s.fields = { ...DEFAULT_FIELDS, fullName, email: user?.email ?? '', company: brand.company, website: site, phone: brand.phone, address: '', logo: brand.logo, photo: '', title: '' }
+      s.fields = { ...DEFAULT_FIELDS, fullName, email: user?.email ?? '', company: brand.company, website: site, phone: brand.phone, address: '', logo: brand.logo, logoLight: brand.logoLight ?? '', photo: '', title: '' }
       s.socials = { ...brand.socials }
       s.design = { ...s.design, primary: brand.primary || s.design.primary, accent: brand.accent || s.design.accent, font: t.design.font ?? brand.font }
       s.extras = {
