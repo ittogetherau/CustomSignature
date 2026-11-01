@@ -95,9 +95,10 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
       ...p,
       style: 'designed',
       name: p.name === 'New campaign' || !p.name ? t.name : p.name,
-      headline: t.defaults.headline,
-      subline: t.defaults.subline,
-      ctaLabel: t.defaults.cta,
+      // New campaigns take the template's sample copy; existing ones keep their own words.
+      headline: isNew || !p.headline ? t.defaults.headline : p.headline,
+      subline: isNew || !p.subline ? t.defaults.subline : p.subline,
+      ctaLabel: isNew || !p.ctaLabel ? t.defaults.cta : p.ctaLabel,
       from: t.defaults.from,
       to: t.defaults.to,
       design: { template: t.id, eyebrow: t.defaults.eyebrow, date: t.defaults.date, accent: t.defaults.accent, showLogo: Boolean(brand.logo), animated: false },
@@ -214,6 +215,7 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
 
         <Field label="Button label"><input className="input" placeholder="Leave blank for no button" value={c.ctaLabel} onChange={(e) => set('ctaLabel', e.target.value)} /></Field>
         <Field label="Link"><input className="input" placeholder="yoursite.com/offer" value={c.url} onChange={(e) => set('url', e.target.value)} /></Field>
+        <div className="sm:col-span-2"><Toggle on={c.active} onChange={(v) => set('active', v)} label={c.active ? 'Live — goes into signatures during its dates' : 'Paused — saved but not shown in signatures'} desc="Live campaigns are added to signatures automatically." /></div>
         <Field label="Starts"><input className="input" type="date" value={c.start} onChange={(e) => set('start', e.target.value)} /></Field>
         <Field label="Ends"><input className="input" type="date" value={c.end} onChange={(e) => set('end', e.target.value)} /></Field>
         <div className="sm:col-span-2">
