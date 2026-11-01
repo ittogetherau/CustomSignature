@@ -158,7 +158,7 @@ export function Security() {
     { icon: Database, t: 'Tenant isolation', b: 'Every table is protected by row-level security. Each workspace can only ever read and write its own data.' },
     { icon: KeyRound, t: 'Modern authentication', b: 'Sign in with Microsoft or email. Sessions use short-lived tokens; server secrets never reach the browser.' },
     { icon: EyeOff, t: 'Least privilege with Microsoft 365', b: 'Read-only directory access granted by your admin. No mailbox access, no sending, no changes to your tenant.' },
-    { icon: Lock, t: 'Privacy by default', b: 'No tracking pixels or click tracking in signatures. Handled in line with the Privacy Act (APPs) and GDPR principles.' },
+    { icon: Lock, t: 'Privacy by default', b: 'No open-tracking pixels. Optional link-click analytics store approximate location only — never IP addresses. Handled in line with the Privacy Act (APPs) and GDPR principles.' },
   ]
   return (
     <>

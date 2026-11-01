@@ -3,7 +3,8 @@ import { AlertTriangle, Check, Loader2, Send, ShieldCheck } from 'lucide-react'
 import { useAuth } from '../auth'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
-import { exportDocument, renderSignature } from '../lib/render'
+import { renderSignature } from '../lib/render'
+import { useSignatureExport } from './useExport'
 import { MS_MAIL_SCOPES, MailAuthNeeded, buildSignatureEmail, sendViaGraph } from '../lib/signatureEmail'
 import type { Employee, Signature } from '../types'
 import { Avatar, Field, Modal, useToast } from './ui'
@@ -36,6 +37,7 @@ export default function SendSignatures({ open, onClose, people, sigFor, resume }
   const { user } = useAuth()
   const { org, brand, campaigns, markSent } = useStore()
   const toast = useToast()
+  const exportSig = useSignatureExport()
   const senderName = (user?.user_metadata?.full_name as string) || (user?.user_metadata?.name as string) || user?.email || 'Your team'
   const [subject, setSubject] = useState(resume?.subject ?? `Your new ${brand.company || org.name} email signature`)
   const [note, setNote] = useState(resume?.note ?? '')
@@ -72,10 +74,11 @@ export default function SendSignatures({ open, onClose, people, sigFor, resume }
     for (const p of people) {
       const sig = sigFor(p)
       try {
+        const out = await exportSig(sig, 'emp')
         await sendViaGraph(token, {
           to: p.email, name: p.fullName, subject, note, senderName, company: brand.company || org.name,
-          signatureHtml: renderSignature(sig, { campaigns }),
-          attachmentHtml: exportDocument(sig, { campaigns }),
+          signatureHtml: out.html,
+          attachmentHtml: out.doc,
         })
         ok.push(p.id)
       } catch (e) {

@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
-import { Check, Copy, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UserPlus, Wand2, Eye, Send } from 'lucide-react'
+import { useSignatureExport } from '../components/useExport'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Check, Copy, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UserPlus, Wand2, Eye, Send, BarChart3 } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
 import type { Employee, Signature } from '../types'
 import { TEMPLATES, templateById, uid, DEFAULT_EXTRAS } from '../lib/templates'
-import { exportDocument, renderSignature } from '../lib/render'
+import { renderSignature } from '../lib/render'
 import { copyRich, download, parseCsv, timeAgo } from '../lib/io'
 import { Avatar, Field, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
 import MicrosoftConnect from '../components/MicrosoftImport'
@@ -39,6 +40,8 @@ export default function Team() {
   const store = useStore()
   const { employees, brand, campaigns } = store
   const toast = useToast()
+  const exportSig = useSignatureExport()
+  const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [dept, setDept] = useState('All')
   const [sel, setSel] = useState<string[]>([])
@@ -78,9 +81,11 @@ export default function Team() {
     setSel([])
   }
 
-  const exportAll = () => {
+  const exportAll = async () => {
     const targets = (sel.length ? employees.filter((e) => sel.includes(e.id)) : employees)
-    const body = targets.map((e) => `<section style="margin:0 0 40px;padding:0 0 32px;border-bottom:1px solid #eee;"><h3 style="font:600 13px Helvetica,Arial;color:#777;margin:0 0 14px;">${e.fullName} — ${e.email}</h3>${renderSignature(sigFor(e), { campaigns })}</section>`).join('\n')
+    let rendered: string[]
+    try { rendered = await Promise.all(targets.map(async (e) => (await exportSig(sigFor(e), 'emp')).html)) } catch (err) { toast((err as Error).message); return }
+    const body = targets.map((e, i) => `<section style="margin:0 0 40px;padding:0 0 32px;border-bottom:1px solid #eee;"><h3 style="font:600 13px Helvetica,Arial;color:#777;margin:0 0 14px;">${e.fullName} — ${e.email}</h3>${rendered[i]}</section>`).join('\n')
     download(`${brand.company.replace(/\s+/g, '-').toLowerCase()}-team-signatures.html`, `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${brand.company} team signatures</title></head><body style="padding:32px;">${body}</body></html>`)
     toast(`Exported ${targets.length} signatures`)
   }
@@ -175,8 +180,9 @@ export default function Team() {
                   <td className="py-3 pr-4 text-right">
                     <div className="flex justify-end gap-1 opacity-60 transition group-hover:opacity-100">
                       <button className="btn btn-ghost btn-sm" onClick={() => setView(e)}><Eye size={14} /> Preview</button>
+                      {store.role !== 'member' && <button className="btn btn-ghost btn-sm btn-icon" aria-label="Click insights" title="Click insights" onClick={() => navigate(`/insights?person=${e.id}`)}><BarChart3 size={14} /></button>}
                       <button className="btn btn-ghost btn-sm btn-icon" aria-label="Email signature" title="Email signature" onClick={() => openSend([e.id])}><Send size={14} /></button>
-                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Copy" onClick={async () => { try { await copyRich(renderSignature(sigFor(e), { campaigns })); toast(`Copied ${e.fullName.split(' ')[0]}'s signature`) } catch (err) { toast((err as Error).message) } }}><Copy size={14} /></button>
+                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Copy" onClick={async () => { try { await copyRich((await exportSig(sigFor(e), 'emp')).html); toast(`Copied ${e.fullName.split(' ')[0]}'s signature`) } catch (err) { toast((err as Error).message) } }}><Copy size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -210,8 +216,8 @@ export default function Team() {
       <AddModal open={addOpen} onClose={() => setAddOpen(false)} />
       <Modal open={!!view} onClose={() => setView(null)} title={view?.fullName ?? ''} subtitle={view ? `${templateById(view.templateId ?? brand.defaultTemplateId).name} · generated from your brand kit` : ''} width={720}
         footer={view && <>
-          <button className="btn btn-line" onClick={() => download(`${view.fullName.replace(/\s+/g, '-').toLowerCase()}.html`, exportDocument(sigFor(view), { campaigns }))}><Download size={15} /> Download</button>
-          <button className="btn btn-clay" onClick={async () => { try { await copyRich(renderSignature(sigFor(view), { campaigns })); toast('Copied') } catch (err) { toast((err as Error).message) } }}><Copy size={15} /> Copy signature</button>
+          <button className="btn btn-line" onClick={async () => { try { download(`${view.fullName.replace(/\s+/g, '-').toLowerCase()}.html`, (await exportSig(sigFor(view), 'emp')).doc) } catch (err) { toast((err as Error).message) } }}><Download size={15} /> Download</button>
+          <button className="btn btn-clay" onClick={async () => { try { await copyRich((await exportSig(sigFor(view), 'emp')).html); toast('Copied') } catch (err) { toast((err as Error).message) } }}><Copy size={15} /> Copy signature</button>
         </>}>
         {view && <div className="overflow-x-auto rounded-xl border border-line bg-white p-6"><SigThumb html={renderSignature(sigFor(view), { campaigns })} align="left" /></div>}
       </Modal>

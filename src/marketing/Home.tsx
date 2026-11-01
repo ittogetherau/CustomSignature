@@ -103,7 +103,7 @@ const FAQ = [
   ['What does Inkwell do?', 'Inkwell lets you design email signatures from 41 professional templates, roll them out to your whole company from Microsoft 365 or a CSV, add banners and animation, and keep everyone consistent from one brand kit.'],
   ['How does the Microsoft 365 integration work?', 'Sign in with Microsoft and a 365 administrator approves read-only directory access once. Inkwell imports names, titles, departments, phones and photos, then re-syncs every night — new starters, changes and leavers are handled automatically.'],
   ['Do animated signatures really work in Outlook and Gmail?', 'Yes. Inkwell renders animation as hosted GIFs, which play in Gmail, Outlook on the web, Outlook for Mac, Apple Mail and mobile apps. Classic Outlook for Windows shows the first frame, so every effect is designed to look finished on frame one.'],
-  ['Do you track recipients?', 'No. Inkwell signatures contain no tracking pixels and links are not routed through a click tracker. Your recipients get a clean, fast email.'],
+  ['Do you track recipients?', 'We never track email opens — there are no tracking pixels. Workspaces can optionally count link clicks (which link, when, approximate location, device and mail app). IP addresses are never stored, automated link scanners are filtered out, and tracking can be switched off in the brand kit.'],
   ['Where is my data stored?', 'In Sydney, Australia. Inkwell is operated by IT Together, an ISO 27001 and SOC 2 organisation, and handles personal information in line with the Privacy Act and GDPR.'],
   ['How much does it cost?', 'Inkwell is free during early access, with every feature included. Founding customers lock in preferential pricing when paid plans launch.'],
 ]
@@ -153,7 +153,7 @@ export default function Home() {
             ['41', 'designed templates', 'Corporate, creative and industry layouts'],
             [String(PHOTO_EFFECTS.length), 'animated photo effects', 'Rendered as email-safe GIFs'],
             ['1 click', 'Microsoft 365 approval', 'Then nightly automatic sync'],
-            ['0', 'tracking pixels', 'Clean, fast, private email'],
+            ['0', 'tracking pixels', 'Click analytics without spying on opens'],
           ].map(([n, l, s], k) => (
             <Reveal key={l} delay={k * 80} className="bg-surface p-7">
               <div className="h-display text-[44px] leading-none text-ink">{n}</div>
@@ -261,6 +261,7 @@ export default function Home() {
               { icon: Code2, t: 'Clean HTML', b: 'Inline-styled tables that survive Outlook, Gmail and Apple Mail. Copy or download in one click.' },
               { icon: Globe2, t: 'Hosted images', b: 'Photos and logos served from fast, reliable storage — so they show up in every mail app.' },
               { icon: Lock, t: 'Roles & invites', b: 'Owners, admins and members. Invite colleagues and they join automatically on sign-in.' },
+              { icon: TrendingUp, t: 'Click insights', b: 'See which links get clicked, where and on what device — for the whole team or any individual. Scanner clicks filtered out.' },
             ].map(({ icon: Icon, t, b }, k) => (
               <Reveal key={t} delay={(k % 3) * 80} className="bg-surface p-7">
                 <Icon size={20} className="text-clay" />

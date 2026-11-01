@@ -8,7 +8,7 @@ import { FONTS, SOCIAL_LABEL, renderSignature } from '../lib/render'
 import { TEMPLATES } from '../lib/templates'
 import { brandColors } from '../lib/io'
 import { employeeSignature } from './Team'
-import { ColorInput, Field, PageHeader, SigThumb, useToast } from '../components/ui'
+import { ColorInput, Field, PageHeader, SigThumb, Toggle, useToast } from '../components/ui'
 
 export default function Brand() {
   const store = useStore()
@@ -75,6 +75,12 @@ export default function Brand() {
                 <Field key={k} label={SOCIAL_LABEL[k]}><input className="input" value={b.socials[k] ?? ''} onChange={(e) => set('socials', { ...b.socials, [k]: e.target.value })} /></Field>
               ))}
             </div>
+          </section>
+
+          <section className="card p-5">
+            <h2 className="h-display mb-1 text-xl">Link click analytics</h2>
+            <p className="mb-4 text-sm text-muted">Count clicks on website, social, button and banner links in signatures copied, downloaded or emailed from Inkwell. Records link, time, approximate location, device and mail app — never IP addresses, and no open-tracking pixels.</p>
+            <Toggle on={b.trackClicks !== false} onChange={(v) => set('trackClicks', v)} label="Track link clicks" desc="Applies to signatures shared after you save. Reinstall to stop tracking existing ones." />
           </section>
 
           <section className="card p-5">

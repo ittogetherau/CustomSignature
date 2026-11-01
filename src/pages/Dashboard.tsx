@@ -1,4 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
+import { useSignatureExport } from '../components/useExport'
 import { ArrowRight, Check, Copy, LayoutGrid, Megaphone, Palette, PenLine, Upload, Users, Megaphone as Mega, UserCheck } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
@@ -19,6 +20,7 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const toast = useToast()
+  const exportSig = useSignatureExport()
   const primary = signatures[0]
   const name = (user?.user_metadata?.full_name as string | undefined) || (user?.user_metadata?.name as string | undefined) || ''
   const first = name.split(' ')[0]
@@ -106,7 +108,7 @@ export default function Dashboard() {
                 <span className="text-xs text-muted"> · {templateById(primary.templateId).name} · edited {timeAgo(primary.updatedAt)}</span>
               </div>
               <div className="flex shrink-0 gap-1">
-                <button className="btn btn-ghost btn-sm" onClick={async () => { try { await copyRich(renderSignature(primary, { campaigns })); toast('Signature copied') } catch (err) { toast((err as Error).message) } }}><Copy size={14} /> Copy</button>
+                <button className="btn btn-ghost btn-sm" onClick={async () => { try { await copyRich((await exportSig(primary, 'sig')).html); toast('Signature copied') } catch (err) { toast((err as Error).message) } }}><Copy size={14} /> Copy</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/editor/${primary.id}`)}>Edit <ArrowRight size={14} /></button>
               </div>
             </div>

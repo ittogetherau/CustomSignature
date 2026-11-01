@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useSignatureExport } from '../components/useExport'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Check, Code2, Copy, Download, ImagePlus, Info, LayoutTemplate, Link2, Megaphone, Palette, Plus, Sparkles, Trash2, User, Wand2, Share2, Loader2, Zap, AlertTriangle,
@@ -6,7 +7,7 @@ import {
 import clsx from 'clsx'
 import { useStore } from '../store'
 import type { NavLink, Signature, SocialKey } from '../types'
-import { FONTS, SOCIAL_LABEL, exportDocument, renderSignature } from '../lib/render'
+import { FONTS, SOCIAL_LABEL, renderSignature } from '../lib/render'
 import { TEMPLATES, templateById } from '../lib/templates'
 import { brandColors, copyRich, copyText, download, slug } from '../lib/io'
 import EmailPreview from '../components/EmailPreview'
@@ -36,6 +37,7 @@ export default function Editor() {
   const { id } = useParams()
   const store = useStore()
   const toast = useToast()
+  const exportSig = useSignatureExport()
   const navigate = useNavigate()
   const original = store.signatures.find((s) => s.id === id)
   const [sig, setSig] = useState<Signature | undefined>(original)
@@ -109,7 +111,7 @@ export default function Editor() {
 
   const doCopy = async () => {
     try {
-      await copyRich(renderSignature(sig, { campaigns: store.campaigns }))
+      await copyRich((await exportSig(sig, 'sig')).html)
       toast('Signature copied — paste it into your mail settings')
     } catch (err) {
       toast((err as Error).message)
@@ -130,7 +132,7 @@ export default function Editor() {
         </div>
         <div className="flex items-center gap-2">
           <button className="btn btn-ghost btn-sm hidden md:inline-flex" onClick={() => setCode(true)}><Code2 size={15} /> HTML</button>
-          <button className="btn btn-line btn-sm hidden sm:inline-flex" onClick={() => download(`${slug(sig.label)}.html`, exportDocument(sig, { campaigns: store.campaigns }))}><Download size={15} /> Download</button>
+          <button className="btn btn-line btn-sm hidden sm:inline-flex" onClick={async () => { try { download(`${slug(sig.label)}.html`, (await exportSig(sig, 'sig')).doc) } catch (err) { toast((err as Error).message) } }}><Download size={15} /> Download</button>
           <button className="btn btn-line btn-sm hidden sm:inline-flex" onClick={() => setInstall(true)}>Install guide</button>
           <button className="btn btn-clay btn-sm" onClick={doCopy}><Copy size={15} /> Copy signature</button>
         </div>

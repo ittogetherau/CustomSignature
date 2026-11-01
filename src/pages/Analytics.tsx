@@ -5,6 +5,7 @@ import { BarChart3, Users } from 'lucide-react'
 import { useStore } from '../store'
 import { templateById } from '../lib/templates'
 import { Empty, PageHeader } from '../components/ui'
+import ClickInsights from '../components/ClickInsights'
 
 function ChartTip({ active, payload, label }: { active?: boolean; payload?: { name: string; value: number; color: string }[]; label?: string }) {
   if (!active || !payload?.length) return null
@@ -62,7 +63,9 @@ export default function Insights() {
 
   return (
     <>
-      <PageHeader eyebrow="Workspace" title="Insights" subtitle="Signature coverage, profile completeness and campaign reach across your company." />
+      <PageHeader eyebrow="Workspace" title="Insights" subtitle="Link clicks, locations and devices — plus signature coverage and profile completeness across your company." />
+      <ClickInsights />
+      <h2 className="h-display mb-5 text-2xl">Coverage & profiles</h2>
 
       <div className="mb-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         {[

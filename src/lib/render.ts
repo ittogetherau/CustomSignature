@@ -756,10 +756,11 @@ export function renderSignature(s: Signature, ctx: RenderContext = {}) {
   return anim ? `<style>${ANIMATION_CSS}</style>${body}` : body
 }
 
-export function exportDocument(s: Signature, ctx: RenderContext = {}) {
+/** Standalone HTML file. Pass `html` to wrap an already-rendered (e.g. link-tracked) signature. */
+export function exportDocument(s: Signature, ctx: RenderContext = {}, html?: string) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>${esc(s.fields.fullName)} — Email signature</title></head>
 <body style="margin:0;padding:24px;background:#ffffff;">
-${renderSignature(s, ctx)}
+${html ?? renderSignature(s, ctx)}
 </body></html>`
 }

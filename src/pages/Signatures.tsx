@@ -1,8 +1,9 @@
 import { useState } from 'react'
+import { useSignatureExport } from '../components/useExport'
 import { Link, useNavigate } from 'react-router-dom'
 import { Copy, CopyPlus, Download, MoreHorizontal, PenLine, Plus, Trash2, Sparkles } from 'lucide-react'
 import { useStore } from '../store'
-import { exportDocument, renderSignature } from '../lib/render'
+import { renderSignature } from '../lib/render'
 import { templateById } from '../lib/templates'
 import { copyRich, download, slug, timeAgo } from '../lib/io'
 import { Empty, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
@@ -11,6 +12,7 @@ export default function Signatures() {
   const { signatures, campaigns, deleteSignature, duplicateSignature } = useStore()
   const navigate = useNavigate()
   const toast = useToast()
+  const exportSig = useSignatureExport()
   const [menu, setMenu] = useState<string | null>(null)
   const [confirm, setConfirm] = useState<string | null>(null)
 
@@ -44,7 +46,7 @@ export default function Signatures() {
                     </div>
                     <div className="mt-0.5 text-xs text-muted">{t.name} · edited {timeAgo(s.updatedAt)}</div>
                   </div>
-                  <button className="btn btn-line btn-sm" onClick={async () => { try { await copyRich(renderSignature(s, { campaigns })); toast('Signature copied') } catch (err) { toast((err as Error).message) } }}><Copy size={14} /> Copy</button>
+                  <button className="btn btn-line btn-sm" onClick={async () => { try { await copyRich((await exportSig(s, 'sig')).html); toast('Signature copied') } catch (err) { toast((err as Error).message) } }}><Copy size={14} /> Copy</button>
                   <div className="relative">
                     <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setMenu(menu === s.id ? null : s.id)} aria-label="More"><MoreHorizontal size={16} /></button>
                     {menu === s.id && (
@@ -52,7 +54,7 @@ export default function Signatures() {
                         <div className="fixed inset-0 z-10" onClick={() => setMenu(null)} />
                         <div className="card absolute bottom-full right-0 z-20 mb-1 w-44 animate-rise p-1 shadow-lift">
                           <MenuItem icon={<CopyPlus size={14} />} onClick={() => { const c = duplicateSignature(s.id); setMenu(null); if (c) toast('Duplicated') }}>Duplicate</MenuItem>
-                          <MenuItem icon={<Download size={14} />} onClick={() => { download(`${slug(s.label)}.html`, exportDocument(s, { campaigns })); setMenu(null) }}>Download HTML</MenuItem>
+                          <MenuItem icon={<Download size={14} />} onClick={async () => { setMenu(null); try { download(`${slug(s.label)}.html`, (await exportSig(s, 'sig')).doc) } catch (err) { toast((err as Error).message) } }}>Download HTML</MenuItem>
                           <MenuItem icon={<Trash2 size={14} />} danger onClick={() => { setConfirm(s.id); setMenu(null) }}>Delete</MenuItem>
                         </div>
                       </>

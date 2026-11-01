@@ -125,5 +125,7 @@ export interface BrandKit {
   phone: string
   disclaimer: string
   defaultTemplateId: string
+  /** Route signature links through /r/<code> to count clicks (default on). */
+  trackClicks?: boolean
   socials: Partial<Record<SocialKey, string>>
 }
