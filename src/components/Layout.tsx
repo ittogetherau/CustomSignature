@@ -18,8 +18,8 @@ const NAV = [
 
 /** IT Together monogram — the triangular "A" mark, redrawn as a crisp vector. */
 /**
- * Inkwell mark: a fountain-pen nib pointing up, so it doubles as IT Together's peak.
- * IT Together blue badge, Inkwell clay ink drop.
+ * Inkwell mark: a fountain-pen nib signing its name on an IT Together blue badge,
+ * with the Inkwell clay ink drop.
  */
 export function InkwellMark({ size = 32 }: { size?: number }) {
   // Unique per instance: a gradient inside a hidden copy (e.g. the collapsed sidebar) would blank the others.
@@ -33,10 +33,15 @@ export function InkwellMark({ size = 32 }: { size?: number }) {
         </linearGradient>
       </defs>
       <rect width="32" height="32" rx="9" fill={`url(#${id})`} />
-      <path d="M16 5.5 L23 18.2 Q23.6 20.6 21.2 22 L10.8 22 Q8.4 20.6 9 18.2 Z" fill="#ffffff" />
-      <rect x="11" y="23.6" width="10" height="3" rx="1.2" fill="#ffffff" />
-      <path d="M16 8.5 V15" stroke="#1450ad" strokeWidth="1.4" strokeLinecap="round" />
-      <circle cx="16" cy="17" r="2.1" fill="#e2643b" />
+      {/* handwritten signature flowing out of the nib */}
+      <path d="M4.6 22.6 C6.2 17.6 8.4 15.2 9.5 16.8 C10.5 18.3 8.9 22 10.8 22.3 C12.6 22.6 13.6 18.6 15.3 19 C16.8 19.4 15.6 22 17.4 21.8 C18.6 21.7 19.7 21 20.6 20.5" fill="none" stroke="#ffffff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.5 25.6 H17" stroke="#ffffff" strokeOpacity="0.45" strokeWidth="1.1" strokeLinecap="round" />
+      <g transform="translate(20.9 20.1) rotate(-135) scale(0.56) translate(-16 -5.5)">
+        <path d="M16 5.5 L23 18.2 Q23.6 20.6 21.2 22 L10.8 22 Q8.4 20.6 9 18.2 Z" fill="#ffffff" />
+        <rect x="11" y="23.6" width="10" height="3" rx="1.2" fill="#ffffff" />
+        <path d="M16 8.5 V15" stroke="#1450ad" strokeWidth="1.6" strokeLinecap="round" />
+        <circle cx="16" cy="17" r="2.3" fill="#e2643b" />
+      </g>
     </svg>
   )
 }
