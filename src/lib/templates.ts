@@ -22,6 +22,13 @@ export const TEMPLATES: TemplateMeta[] = [
     extras: { verified: true, navLinks: [{ label: 'Book a call', url: 'cal.com' }, { label: 'Portfolio', url: 'example.com/work' }, { label: 'Blog', url: 'example.com/blog' }] },
   },
   {
+    id: 'motion', name: 'Motion Card', tagline: 'Animated GIF photo, button & icons — moves in Gmail and Outlook',
+    categories: ['Modern', 'Marketing'], pro: true, animated: true,
+    design: { primary: '#0f766e', accent: '#e2643b', text: '#111827', photoShape: 'circle' },
+    extras: { verified: true, cta: { label: 'Book a meeting', url: 'example.com/book' }, motion: { photoEffect: 'orbit', greeting: 'Hi!', animateCta: true, animateBadge: true, animateIcons: true } },
+    sample: { title: 'Business Development Manager', company: 'Northwind' },
+  },
+  {
     id: 'neon', name: 'Neon Night', tagline: 'Dark card with neon glow for bold creatives',
     categories: ['Creative', 'Modern'], pro: true, animated: true,
     design: { primary: '#7c3aed', accent: '#22d3ee', text: '#ffffff', iconStyle: 'outline' },

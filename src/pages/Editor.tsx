@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft, Check, Code2, Copy, Download, ImagePlus, Info, LayoutTemplate, Link2, Megaphone, Palette, Plus, Sparkles, Trash2, User, Wand2, Share2, Loader2,
+  ArrowLeft, Check, Code2, Copy, Download, ImagePlus, Info, LayoutTemplate, Link2, Megaphone, Palette, Plus, Sparkles, Trash2, User, Wand2, Share2, Loader2, Zap, AlertTriangle,
 } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
@@ -10,10 +10,12 @@ import { FONTS, SOCIAL_LABEL, exportDocument, renderSignature } from '../lib/ren
 import { TEMPLATES, templateById } from '../lib/templates'
 import { brandColors, copyRich, copyText, download, slug } from '../lib/io'
 import EmailPreview from '../components/EmailPreview'
+import { DEFAULT_MOTION, buildMotion, motionKeys, motionStale, type MotionProblem } from '../lib/motionAssets'
+import { PHOTO_EFFECTS, drawPhotoFrame, loadImage, type PhotoEffect } from '../lib/motion'
 import { useImageUpload } from '../components/upload'
 import { ColorInput, Empty, Field, Modal, SigThumb, Toggle, useToast } from '../components/ui'
 
-type Tab = 'template' | 'details' | 'images' | 'social' | 'design' | 'extras'
+type Tab = 'template' | 'details' | 'images' | 'social' | 'design' | 'motion' | 'extras'
 
 const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: 'template', label: 'Layout', icon: LayoutTemplate },
@@ -21,6 +23,7 @@ const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: 'images', label: 'Images', icon: ImagePlus },
   { id: 'social', label: 'Social', icon: Share2 },
   { id: 'design', label: 'Style', icon: Palette },
+  { id: 'motion', label: 'Motion', icon: Zap },
   { id: 'extras', label: 'Extras', icon: Sparkles },
 ]
 
@@ -53,6 +56,32 @@ export default function Editor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sig])
 
+  // Email-safe motion: regenerate GIFs (debounced) whenever their inputs change.
+  const [motionBusy, setMotionBusy] = useState(false)
+  const [motionProblem, setMotionProblem] = useState<MotionProblem>(null)
+  const failedKey = useRef('')
+  useEffect(() => {
+    if (!sig || motionBusy || !motionStale(sig)) return
+    const key = JSON.stringify(motionKeys(sig))
+    if (key === failedKey.current) return
+    const t = setTimeout(async () => {
+      setMotionBusy(true)
+      try {
+        const { motion, problem } = await buildMotion(sig, store.org.id)
+        setMotionProblem(problem)
+        if (problem) failedKey.current = key
+        setSig((cur) => (cur?.extras.motion ? { ...cur, extras: { ...cur.extras, motion: { ...motion, ...pickSettings(cur.extras.motion) } } } : cur))
+      } catch (e) {
+        failedKey.current = key
+        toast(`Animation failed: ${(e as Error).message}`)
+      } finally {
+        setMotionBusy(false)
+      }
+    }, 900)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sig, motionBusy])
+
   const html = useMemo(() => (sig ? renderSignature(sig, { campaigns: store.campaigns }) : ''), [sig, store.campaigns])
 
   if (!sig)
@@ -80,7 +109,7 @@ export default function Editor() {
         <div className="min-w-0 flex-1">
           <input value={sig.label} onChange={(e) => set('label', e.target.value)} className="h-display w-full max-w-sm truncate bg-transparent text-lg outline-none focus:underline focus:decoration-clay focus:decoration-2 focus:underline-offset-4" />
           <div className="flex items-center gap-1.5 text-xs text-muted">
-            {saved ? <><Check size={12} className="text-pine" /> All changes saved</> : <><Loader2 size={12} className="animate-spin" /> Saving…</>}
+            {motionBusy ? <><Loader2 size={12} className="animate-spin text-clay" /> Rendering animation…</> : saved ? <><Check size={12} className="text-pine" /> All changes saved</> : <><Loader2 size={12} className="animate-spin" /> Saving…</>}
             <span className="text-line-2">•</span> {templateById(sig.templateId).name} template
           </div>
         </div>
@@ -115,7 +144,7 @@ export default function Editor() {
           <div key={tab} className="animate-rise p-5 md:p-6">
             {tab === 'template' && <TemplatePanel sig={sig} onPick={(t) => {
               const meta = templateById(t)
-              setSig({ ...sig, templateId: t, design: { ...sig.design, ...meta.design, font: meta.design.font ?? sig.design.font }, extras: { ...sig.extras, animations: meta.animated || sig.extras.animations } })
+              setSig({ ...sig, templateId: t, design: { ...sig.design, ...meta.design, font: meta.design.font ?? sig.design.font }, extras: { ...sig.extras, animations: meta.animated || sig.extras.animations, motion: sig.extras.motion ?? meta.extras?.motion } })
             }} campaigns={store.campaigns} />}
 
             {tab === 'details' && (
@@ -194,6 +223,7 @@ export default function Editor() {
               </Section>
             )}
 
+            {tab === 'motion' && <MotionPanel sig={sig} setX={setX} busy={motionBusy} problem={motionProblem} onRetry={() => { failedKey.current = ''; setMotionProblem(null); setSig({ ...sig }) }} />}
             {tab === 'extras' && <ExtrasPanel sig={sig} setX={setX} campaigns={store.campaigns} />}
           </div>
         </div>
@@ -384,5 +414,112 @@ function InstallModal({ open, onClose, onCopy }: { open: boolean; onClose: () =>
         ))}
       </ol>
     </Modal>
+  )
+}
+
+/** The user-editable part of motion settings — generated URLs/keys come from the build. */
+function pickSettings(m: Signature['extras']['motion']) {
+  if (!m) return {}
+  const { photoEffect, greeting, animateCta, animateBadge, animateIcons } = m
+  return { photoEffect, greeting, animateCta, animateBadge, animateIcons }
+}
+
+function EffectPreview({ effect, photo, initials, primary, accent, shape, greeting, on, onClick }: {
+  effect: PhotoEffect | 'none'; photo: HTMLImageElement | null; initials: string; primary: string; accent: string
+  shape: Signature['design']['photoShape']; greeting: string; on: boolean; onClick: () => void
+}) {
+  const canvas = useRef<HTMLCanvasElement>(null)
+  useEffect(() => {
+    const ctx = canvas.current?.getContext('2d')
+    if (!ctx) return
+    let raf = 0
+    const start = performance.now()
+    const loop = (now: number) => {
+      if (effect === 'none') {
+        drawPhotoFrame(ctx, { photo, initials, effect: 'breathe', primary, accent, shape, greeting }, 0.75, 120)
+      } else {
+        drawPhotoFrame(ctx, { photo, initials, effect, primary, accent, shape, greeting }, ((now - start) / 2000) % 1, 120)
+        raf = requestAnimationFrame(loop)
+      }
+    }
+    raf = requestAnimationFrame(loop)
+    return () => cancelAnimationFrame(raf)
+  }, [effect, photo, initials, primary, accent, shape, greeting])
+  const meta = PHOTO_EFFECTS.find((e) => e.id === effect)
+  return (
+    <button onClick={onClick} className={clsx('relative overflow-hidden rounded-xl border bg-white p-2 text-left transition', on ? 'border-ink ring-2 ring-ink' : 'border-line hover:border-line-2 hover:shadow-lift')}>
+      <canvas ref={canvas} width={120} height={120} className="mx-auto block size-[96px]" />
+      <div className="mt-1 border-t border-line pt-1.5">
+        <div className="text-[12px] font-semibold">{meta?.name ?? 'Still photo'}</div>
+        <div className="truncate text-[10.5px] text-muted">{meta?.blurb ?? 'No photo animation'}</div>
+      </div>
+      {on && <span className="absolute right-2 top-2 grid size-5 place-items-center rounded-full bg-ink text-paper"><Check size={11} strokeWidth={3} /></span>}
+    </button>
+  )
+}
+
+function MotionPanel({ sig, setX, busy, problem, onRetry }: {
+  sig: Signature
+  setX: <K extends keyof Signature['extras']>(k: K, v: Signature['extras'][K]) => void
+  busy: boolean
+  problem: MotionProblem
+  onRetry: () => void
+}) {
+  const m = sig.extras.motion
+  const [img, setImg] = useState<HTMLImageElement | null>(null)
+  useEffect(() => {
+    let live = true
+    setImg(null)
+    if (sig.fields.photo) loadImage(sig.fields.photo).then((i) => live && setImg(i)).catch(() => {})
+    return () => { live = false }
+  }, [sig.fields.photo])
+  const initials = sig.fields.fullName.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]?.toUpperCase()).join('') || '?'
+  const set = (patch: Partial<NonNullable<typeof m>>) => setX('motion', { ...DEFAULT_MOTION, ...m, ...patch })
+
+  return (
+    <Section title="Motion" desc="Animated GIFs that play in Gmail, Outlook.com, Apple Mail and on phones — not just in previews.">
+      {!m ? (
+        <div className="rounded-2xl border border-line bg-gradient-to-br from-clay-soft to-butter-soft p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold"><Zap size={16} className="text-clay-ink" /> Make this signature move everywhere</div>
+          <p className="mt-1.5 text-sm leading-relaxed text-ink-3">We render your photo, button, badge and icons as lightweight animated GIFs, hosted for you. CSS-only animation is stripped by most mail apps — GIFs aren't.</p>
+          <button className="btn btn-ink mt-4 w-full" onClick={() => { setX('motion', DEFAULT_MOTION); if (!sig.extras.animations) setX('animations', true) }}>Turn on animated GIFs</button>
+        </div>
+      ) : (
+        <>
+          <div className="mb-4 flex items-center justify-between rounded-xl border border-line bg-paper/60 px-3.5 py-2.5 text-sm">
+            {busy ? <span className="flex items-center gap-2 text-ink-3"><Loader2 size={14} className="animate-spin text-clay" /> Rendering GIFs…</span>
+              : problem ? <span className="flex items-center gap-2 text-clay-ink"><AlertTriangle size={14} /> Photo can't be animated</span>
+              : <span className="flex items-center gap-2 text-pine"><Check size={14} /> Animations up to date</span>}
+            {!sig.extras.animations && <button className="text-xs font-semibold text-clay-ink hover:underline" onClick={() => setX('animations', true)}>Animations are off — turn on</button>}
+          </div>
+          {problem === 'photo-unreadable' && (
+            <div className="mb-4 flex gap-2.5 rounded-xl bg-butter-soft p-3 text-xs leading-relaxed text-[#6b4e0e]">
+              <Info size={14} className="mt-0.5 shrink-0" />
+              <span>This photo's website doesn't allow it to be animated. Upload the photo in <strong>Images</strong> (or import it from Microsoft 365) and it'll work. <button className="font-semibold underline" onClick={onRetry}>Retry</button></span>
+            </div>
+          )}
+
+          <span className="field-label">Photo animation</span>
+          <div className="grid grid-cols-2 gap-2.5">
+            {(['none', ...PHOTO_EFFECTS.map((e) => e.id)] as (PhotoEffect | 'none')[]).map((e) => (
+              <EffectPreview key={e} effect={e} photo={img} initials={initials} primary={sig.design.primary} accent={sig.design.accent} shape={sig.design.photoShape} greeting={m.greeting} on={m.photoEffect === e} onClick={() => set({ photoEffect: e })} />
+            ))}
+          </div>
+          {m.photoEffect === 'hello' && (
+            <Field label="Greeting" className="mt-3"><input className="input" maxLength={10} value={m.greeting} onChange={(e) => set({ greeting: e.target.value })} /></Field>
+          )}
+
+          <Divider label="Also animate" />
+          <div className="space-y-2.5">
+            <Toggle on={m.animateCta} onChange={(v) => set({ animateCta: v })} label="Call-to-action button" desc={sig.extras.cta ? 'Shimmer sweep with a nudging arrow' : 'Add a button in Extras first'} />
+            <Toggle on={m.animateBadge} onChange={(v) => set({ animateBadge: v })} label="Verified badge" desc={sig.extras.verified ? 'Spinning seal that pops' : 'Turn on the verified badge in Extras'} />
+            <Toggle on={m.animateIcons} onChange={(v) => set({ animateIcons: v })} label="Social icons" desc="Icons hop one after another (Motion Card layout)" />
+          </div>
+
+          <p className="mt-5 text-xs leading-relaxed text-faint">Outlook for Windows desktop shows only the first frame of a GIF, so every effect is designed to look finished on frame one.</p>
+          <button className="mt-3 text-xs font-semibold text-muted hover:text-ink" onClick={() => setX('motion', undefined)}>Switch back to CSS-only animation</button>
+        </>
+      )}
+    </Section>
   )
 }

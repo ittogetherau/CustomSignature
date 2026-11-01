@@ -30,9 +30,27 @@ export interface SignatureDesign {
   iconStyle: 'filled' | 'outline' | 'plain'
 }
 
+/** Email-safe animation: settings plus the GIFs generated from them (hosted URLs). */
+export interface SignatureMotion {
+  photoEffect: 'none' | 'orbit' | 'halo' | 'shine' | 'sparkle' | 'breathe' | 'hello' | 'draw'
+  greeting: string
+  animateCta: boolean
+  animateBadge: boolean
+  animateIcons: boolean
+  photoGif?: string
+  photoKey?: string
+  ctaGif?: string
+  ctaWidth?: number
+  ctaKey?: string
+  badgeGif?: string
+  iconGifs?: Partial<Record<SocialKey, string>>
+  iconsKey?: string
+}
+
 export interface SignatureExtras {
   verified: boolean
   animations: boolean
+  motion?: SignatureMotion
   navLinks: NavLink[]
   cta: NavLink | null
   campaignId: string | null

@@ -76,8 +76,18 @@ function radius(c: Ctx, size: number) {
   return c.s.design.photoShape === 'circle' ? '50%' : c.s.design.photoShape === 'rounded' ? `${Math.round(size / 5)}px` : '4px'
 }
 
+/** Generated GIFs replace CSS motion when the signature has them and animation is on. */
+const motion = (c: Ctx) => (c.anim ? c.s.extras.motion : undefined)
+// Photo GIFs include a margin for rings/bubbles; the photo itself is this share of the image.
+const PHOTO_FILL = 0.66
+
 function photo(c: Ctx, size: number, opts: { ring?: boolean; glow?: boolean; border?: string } = {}) {
   const { fields, design } = c.s
+  const m = motion(c)
+  if (m?.photoGif && m.photoEffect !== 'none') {
+    const w = Math.round(size / PHOTO_FILL)
+    return `<img src="${esc(m.photoGif)}" width="${w}" height="${w}" alt="${esc(fields.fullName)}" style="display:block;width:${w}px;height:${w}px;border:0;" />`
+  }
   const r = radius(c, size)
   const cls = [opts.glow && c.anim ? 'sc-glow' : '', opts.ring && c.anim ? 'sc-ring' : ''].filter(Boolean).join(' ')
   const border = opts.border ?? (opts.ring ? `3px solid ${design.primary}` : 'none')
@@ -97,6 +107,9 @@ function logo(c: Ctx, height: number, invert = false) {
 
 function badge(c: Ctx, size = 15) {
   if (!c.s.extras.verified) return ''
+  const m = motion(c)
+  if (m?.animateBadge && m.badgeGif)
+    return `&nbsp;<img src="${esc(m.badgeGif)}" width="${size + 2}" height="${size + 2}" alt="Verified" style="display:inline-block;vertical-align:-3px;width:${size + 2}px;height:${size + 2}px;border:0;" />`
   return `&nbsp;<img src="${icon('checked-2', '#1d9bf0')}" width="${size}" height="${size}" alt="Verified" class="${c.anim ? 'sc-pop' : ''}" style="display:inline-block;vertical-align:-2px;width:${size}px;height:${size}px;border:0;" />`
 }
 
@@ -149,10 +162,22 @@ function contactInline(c: Ctx, color: string, sepColor: string, withAddress = tr
     .join(`<span style="color:${sepColor};">&nbsp;&nbsp;•&nbsp;&nbsp;</span>`)
 }
 
-function socials(c: Ctx, color: string, opts: { size?: number; onDark?: boolean; style?: 'filled' | 'outline' | 'plain' } = {}) {
+function socials(c: Ctx, color: string, opts: { size?: number; onDark?: boolean; style?: 'filled' | 'outline' | 'plain'; vertical?: boolean; gif?: boolean } = {}) {
   const entries = (Object.entries(c.s.socials) as [SocialKey, string][]).filter(([, v]) => v)
   if (!entries.length) return ''
   const size = opts.size ?? 24
+  const m = motion(c)
+  const gifs = opts.gif && m?.animateIcons ? m.iconGifs : undefined
+  if (opts.vertical || gifs) {
+    const cells = entries.map(([k, v]) => {
+      const img = gifs?.[k]
+        ? `<img src="${esc(gifs[k]!)}" width="${size}" height="${size}" alt="${SOCIAL_LABEL[k]}" style="display:block;width:${size}px;height:${size}px;border:0;" />`
+        : `<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td width="${size}" height="${size}" align="center" valign="middle" bgcolor="${color}" style="width:${size}px;height:${size}px;border-radius:50%;background:${color};"><img src="${icon(SOCIAL_ICON[k], '#ffffff')}" width="${Math.round(size * 0.52)}" height="${Math.round(size * 0.52)}" alt="${SOCIAL_LABEL[k]}" style="display:block;border:0;" /></td></tr></table>`
+      const link = `<a href="${esc(url(v))}" class="${c.anim ? 'sc-lift' : ''}" style="display:inline-block;text-decoration:none;">${img}</a>`
+      return opts.vertical ? `<tr><td style="padding:3px 0;">${link}</td></tr>` : `<td style="padding:0 6px 0 0;">${link}</td>`
+    }).join('')
+    return `<table cellpadding="0" cellspacing="0" border="0" role="presentation">${opts.vertical ? cells : `<tr>${cells}</tr>`}</table>`
+  }
   const style = opts.style ?? c.s.design.iconStyle
   const cells = entries
     .map(([k, v]) => {
@@ -188,6 +213,9 @@ function navBar(c: Ctx, opts: { bg: string; color: string; border?: string; radi
 function ctaButton(c: Ctx, bg: string, fg = '#ffffff', square = false) {
   const cta = c.s.extras.cta
   if (!cta?.label) return ''
+  const m = motion(c)
+  if (m?.animateCta && m.ctaGif)
+    return `<a href="${esc(url(cta.url))}" style="display:inline-block;text-decoration:none;"><img src="${esc(m.ctaGif)}" width="${m.ctaWidth ?? 140}" alt="${esc(cta.label)}" style="display:block;border:0;width:${m.ctaWidth ?? 140}px;height:auto;" /></a>`
   return `<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td bgcolor="${bg}" style="border-radius:${square ? 4 : 999}px;background:${bg};"><a href="${esc(url(cta.url))}" class="${c.anim ? 'sc-nav' : ''}" style="display:inline-block;padding:8px 18px;font-family:${c.font};font-size:${c.base}px;font-weight:700;color:${fg};text-decoration:none;border-radius:${square ? 4 : 999}px;">${esc(cta.label)} &rarr;</a></td></tr></table>`
 }
 
@@ -509,6 +537,34 @@ ${banner(c)}${disclaimer(c)}`,
 </td></tr></table></td></tr>
 ${Object.values(c.s.socials).some(Boolean) || c.s.extras.cta ? `<tr><td style="padding-top:12px;border-top:2px solid ${ink};"><table cellpadding="0" cellspacing="0" border="0" role="presentation" width="100%" style="margin-top:10px;"><tr><td>${socials(c, ink, { size: 22, style: 'filled' })}</td><td align="right">${ctaButton(c, ink, '#ffffff', true)}</td></tr></table></td></tr>` : ''}
 ${banner(c)}${disclaimer(c)}`,
+    )
+  },
+
+  motion(c) {
+    const { primary, accent, text } = c.s.design
+    const f = c.s.fields
+    const hasSocial = Object.values(c.s.socials).some(Boolean)
+    const line = (label: string, href: string) =>
+      `<div style="font-family:${c.font};font-size:${c.base}px;line-height:1.65;"><a href="${esc(href)}" style="color:${tint(text, 0.18)};text-decoration:none;">${esc(label)}</a></div>`
+    return wrap(
+      c,
+      `<tr><td style="border:1px solid #e6e3dd;border-radius:14px;padding:16px 18px;">
+<table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr>
+${hasSocial ? `<td valign="middle" style="padding-right:18px;"><table cellpadding="0" cellspacing="0" border="0" role="presentation"><tr><td align="center" style="border:1px solid #e6e3dd;border-radius:999px;padding:8px 7px;">${socials(c, primary, { size: 26, vertical: true, gif: true })}</td></tr></table></td>` : ''}
+<td valign="middle">
+${f.logo || f.company ? `<div style="padding-bottom:10px;">${logo(c, 26)}</div>` : ''}
+${nameLine(c, text, c.base + 5)}
+<div style="font-family:${c.font};font-size:${c.base - 1}px;color:${tint(text, 0.38)};padding:2px 0 6px;">${esc(f.title)}</div>
+${f.company ? `<div style="font-family:${c.font};font-size:${c.base - 2}px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:${primary};padding-bottom:6px;">${esc(f.company)}</div>` : ''}
+${f.phone ? line(f.phone, `tel:${f.phone.replace(/[^\d+]/g, '')}`) : ''}
+${f.mobile ? line(f.mobile, `tel:${f.mobile.replace(/[^\d+]/g, '')}`) : ''}
+${f.email ? line(f.email, `mailto:${f.email}`) : ''}
+${f.website ? line(bare(f.website), url(f.website)) : ''}
+${c.s.extras.cta ? `<div style="padding-top:10px;">${ctaButton(c, primary)}</div>` : ''}
+</td>
+<td valign="middle" style="padding-left:16px;">${photo(c, 112, { ring: true, glow: true, border: `3px solid ${accent}` })}</td>
+</tr></table>
+</td></tr>${banner(c)}${disclaimer(c)}`,
     )
   },
 
