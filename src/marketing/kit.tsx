@@ -84,7 +84,7 @@ export function MotionAvatar({ effect, photo, size = 160, primary = '#0f766e', a
 
 const PRODUCT = [
   { to: '/features', icon: Sparkles, title: 'Features', body: 'Designer, templates, motion and brand kit' },
-  { to: '/showcase', icon: LayoutGrid, title: 'Template showcase', body: '41 designs, 7 animated photo effects' },
+  { to: '/showcase', icon: LayoutGrid, title: 'Template showcase', body: '41 designs, 11 animated photo effects' },
   { to: '/microsoft-365', icon: Users, title: 'Microsoft 365 sync', body: 'Import and auto-sync your directory' },
   { to: '/features#campaigns', icon: Megaphone, title: 'Banners & campaigns', body: 'Promote events in every email' },
   { to: '/features#brand', icon: Palette, title: 'Brand kit', body: 'One source of truth for every signature' },

@@ -32,7 +32,7 @@ export interface SignatureDesign {
 
 /** Email-safe animation: settings plus the GIFs generated from them (hosted URLs). */
 export interface SignatureMotion {
-  photoEffect: 'none' | 'orbit' | 'halo' | 'shine' | 'sparkle' | 'breathe' | 'hello' | 'draw'
+  photoEffect: 'none' | 'orbit' | 'halo' | 'shine' | 'sparkle' | 'breathe' | 'hello' | 'draw' | 'shards' | 'blinds' | 'mosaic' | 'ribbons'
   greeting: string
   animateCta: boolean
   animateBadge: boolean

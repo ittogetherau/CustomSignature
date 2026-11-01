@@ -151,7 +151,7 @@ export default function Home() {
         <div className="grid gap-px overflow-hidden rounded-3xl border border-line bg-line md:grid-cols-4">
           {[
             ['41', 'designed templates', 'Corporate, creative and industry layouts'],
-            ['7', 'animated photo effects', 'Rendered as email-safe GIFs'],
+            [String(PHOTO_EFFECTS.length), 'animated photo effects', 'Rendered as email-safe GIFs'],
             ['1 click', 'Microsoft 365 approval', 'Then nightly automatic sync'],
             ['0', 'tracking pixels', 'Clean, fast, private email'],
           ].map(([n, l, s], k) => (
@@ -193,7 +193,7 @@ export default function Home() {
             <h2 className="h-display mt-3 text-[36px] leading-[1.06] md:text-[52px]">Animation that actually<br />reaches the inbox.</h2>
             <p className="mt-4 text-[16.5px] text-paper/65">Most inboxes strip CSS animation. Inkwell renders motion as lightweight hosted GIFs — so your photo, button and icons move in Gmail, Outlook and on phones. Every first frame is a finished design for Outlook desktop.</p>
           </Reveal>
-          <div className="mt-14 grid grid-cols-2 gap-5 sm:grid-cols-4 lg:grid-cols-7">
+          <div className="mt-14 grid grid-cols-2 gap-5 sm:grid-cols-4 lg:grid-cols-6">
             {PHOTO_EFFECTS.map((e, k) => (
               <Reveal key={e.id} delay={k * 70} className="flex flex-col items-center rounded-3xl border border-paper/10 bg-paper/[0.04] p-4 text-center">
                 <MotionAvatar effect={e.id} photo={PEOPLE[k % PEOPLE.length].photo} size={112} primary={PEOPLE[k % PEOPLE.length].primary} accent={PEOPLE[k % PEOPLE.length].accent} />

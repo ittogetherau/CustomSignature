@@ -80,13 +80,15 @@ function radius(c: Ctx, size: number) {
 /** Generated GIFs replace CSS motion when the signature has them and animation is on. */
 const motion = (c: Ctx) => (c.anim ? c.s.extras.motion : undefined)
 // Photo GIFs include a margin for rings/bubbles; the photo itself is this share of the image.
+// Sliced effects (shards, blinds…) fill nearly the whole image, so they scale less.
 const PHOTO_FILL = 0.66
+const FULL_BLEED_EFFECTS = ['shards', 'blinds', 'mosaic', 'ribbons']
 
 function photo(c: Ctx, size: number, opts: { ring?: boolean; glow?: boolean; border?: string; pad?: number } = {}) {
   const { fields, design } = c.s
   const m = motion(c)
   if (m?.photoGif && m.photoEffect !== 'none') {
-    const w = Math.round(size / PHOTO_FILL)
+    const w = Math.round(size / (FULL_BLEED_EFFECTS.includes(m.photoEffect) ? 0.86 : PHOTO_FILL))
     return `<img src="${esc(m.photoGif)}" width="${w}" height="${w}" alt="${esc(fields.fullName)}" style="display:block;width:${w}px;height:${w}px;border:0;" />`
   }
   const r = radius(c, size)

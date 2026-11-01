@@ -4,7 +4,7 @@ import { GIFEncoder, applyPalette, quantize } from 'gifenc'
 // frame on a canvas and encoded as a looping GIF. Every effect's FIRST frame is a
 // finished design, because Outlook desktop only ever shows frame one.
 
-export type PhotoEffect = 'orbit' | 'halo' | 'shine' | 'sparkle' | 'breathe' | 'hello' | 'draw'
+export type PhotoEffect = 'orbit' | 'halo' | 'shine' | 'sparkle' | 'breathe' | 'hello' | 'draw' | 'shards' | 'blinds' | 'mosaic' | 'ribbons'
 export type Shape = 'circle' | 'rounded' | 'square'
 
 export const PHOTO_EFFECTS: { id: PhotoEffect; name: string; blurb: string }[] = [
@@ -15,7 +15,15 @@ export const PHOTO_EFFECTS: { id: PhotoEffect; name: string; blurb: string }[] =
   { id: 'breathe', name: 'Breathe', blurb: 'Gentle zoom with a soft glow' },
   { id: 'hello', name: 'Say hello', blurb: 'A waving “Hi!” bubble' },
   { id: 'draw', name: 'Draw on', blurb: 'The frame draws itself in colour' },
+  { id: 'shards', name: 'Shards', blurb: 'Slanted slices grow in with a colour shadow' },
+  { id: 'blinds', name: 'Blinds', blurb: 'Vertical slats open in a wave' },
+  { id: 'mosaic', name: 'Mosaic', blurb: 'Tiles ripple out from the centre' },
+  { id: 'ribbons', name: 'Ribbons', blurb: 'Bands slide in from alternating sides' },
 ]
+
+/** Sliced effects fill the whole image instead of sitting inside a ring, so they display at a different scale. */
+export const FULL_BLEED: PhotoEffect[] = ['shards', 'blinds', 'mosaic', 'ribbons']
+export const FULL_BLEED_FILL = 0.86
 
 export interface PhotoGifOptions {
   photo: HTMLImageElement | null
@@ -33,6 +41,43 @@ export const PHOTO_FILL = 0.66
 const SIZE = 200
 const TAU = Math.PI * 2
 const ease = (x: number) => 0.5 - Math.cos(Math.PI * x) / 2
+const clamp01 = (x: number) => Math.max(0, Math.min(1, x))
+const easeOutBack = (x: number) => { const c = 1.6; return 1 + (c + 1) * Math.pow(x - 1, 3) + c * Math.pow(x - 1, 2) }
+
+/**
+ * Loop envelope for sliced effects: 0 → 1 (build), hold, 1 → 0 (collapse).
+ * The phase is offset so t = 0 lands mid-hold — frame one is always the finished picture.
+ */
+function envelope(t: number, delay: number) {
+  const p = (t + 0.3) % 1
+  if (p < 0.08) return 0
+  if (p < 0.3) return easeOutBack(clamp01((p - 0.08 - delay) / 0.16))
+  if (p < 0.86) return 1
+  return 1 - ease(clamp01((p - 0.86 - delay * 0.6) / 0.1))
+}
+
+/** Draw the photo (cover-fit to the whole canvas) through whatever clip path `shape` builds. */
+function photoThrough(ctx: CanvasRenderingContext2D, o: PhotoGifOptions, S: number, shape: () => void, drift = 0) {
+  ctx.save()
+  ctx.beginPath()
+  shape()
+  ctx.clip()
+  if (o.photo) {
+    const s = Math.max(S / o.photo.width, S / o.photo.height) * 1.04
+    const w = o.photo.width * s, h = o.photo.height * s
+    ctx.drawImage(o.photo, (S - w) / 2, (S - h) / 2.6 + drift, w, h)
+  } else {
+    const g = ctx.createLinearGradient(0, 0, S, S)
+    g.addColorStop(0, o.primary); g.addColorStop(1, o.accent)
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, S, S)
+    ctx.fillStyle = '#fff'
+    ctx.font = `700 ${S * 0.26}px Helvetica, Arial, sans-serif`
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+    ctx.fillText(o.initials, S / 2, S / 2)
+  }
+  ctx.restore()
+}
 
 export function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -114,6 +159,91 @@ export function drawPhotoFrame(ctx: CanvasRenderingContext2D, o: PhotoGifOptions
   ctx.fillRect(0, 0, S, S)
 
   switch (o.effect) {
+    case 'shards': {
+      // Five slanted parallelograms, staircase heights, brand-coloured offset shadow.
+      const slope = 0.42
+      const w = S * 0.165, gap = S * 0.03, x0 = S * 0.07
+      const tops = [0.4, 0.22, 0.12, 0.06, 0.34]
+      const bots = [0.95, 0.93, 0.84, 0.7, 0.66]
+      const strips = tops.map((tp, k) => {
+        const e = envelope(t, k * 0.025)
+        const mid = (tp + bots[k]) / 2
+        const half = ((bots[k] - tp) / 2) * e
+        const drift = Math.sin((t + k * 0.13) * TAU) * S * 0.008
+        return { x: x0 + k * (w + gap), top: (mid - half) * S + drift, bot: (mid + half) * S + drift }
+      })
+      const para = (st: { x: number; top: number; bot: number }, dx = 0, dy = 0) => {
+        const sx = (y: number) => st.x + slope * (S - y) * 0.5 + dx
+        ctx.moveTo(sx(st.top + dy), st.top + dy)
+        ctx.lineTo(sx(st.top + dy) + w, st.top + dy)
+        ctx.lineTo(sx(st.bot + dy) + w, st.bot + dy)
+        ctx.lineTo(sx(st.bot + dy), st.bot + dy)
+        ctx.closePath()
+      }
+      ctx.save()
+      ctx.fillStyle = rgba(o.primary, 0.9)
+      ctx.beginPath()
+      strips.forEach((st) => { if (st.bot - st.top > 1) para(st, S * 0.025, S * 0.02) })
+      ctx.fill()
+      ctx.restore()
+      photoThrough(ctx, o, S, () => strips.forEach((st) => { if (st.bot - st.top > 1) para(st) }))
+      break
+    }
+    case 'blinds': {
+      const n = 6, gap = S * 0.018, pad = S * 0.06
+      const sw = (S - pad * 2 - gap * (n - 1)) / n
+      const slats = Array.from({ length: n }, (_, k) => {
+        const e = envelope(t, k * 0.02)
+        const cx = pad + k * (sw + gap) + sw / 2
+        return { x: cx - (sw / 2) * e, w: sw * e, y: pad + S * 0.04 * Math.sin((k / n) * Math.PI), h: S - pad * 2 - S * 0.08 * Math.sin((k / n) * Math.PI) }
+      })
+      ctx.save()
+      ctx.fillStyle = rgba(o.accent, 0.85)
+      slats.forEach((sl) => { if (sl.w > 0.5) { ctx.beginPath(); ctx.roundRect(sl.x + S * 0.012, sl.y + S * 0.014, sl.w, sl.h, sl.w / 2); ctx.fill() } })
+      ctx.restore()
+      photoThrough(ctx, o, S, () => slats.forEach((sl) => { if (sl.w > 0.5) ctx.roundRect(sl.x, sl.y, sl.w, sl.h, sl.w / 2) }))
+      break
+    }
+    case 'mosaic': {
+      const n = 6, gap = S * 0.016, pad = S * 0.05
+      const cell = (S - pad * 2 - gap * (n - 1)) / n
+      const tiles: { x: number; y: number; s: number }[] = []
+      for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) {
+        const d = Math.hypot(q - (n - 1) / 2, r - (n - 1) / 2) / Math.hypot((n - 1) / 2, (n - 1) / 2)
+        // Corners stay empty for a softer, rounded silhouette.
+        if (d > 0.93) continue
+        const e = envelope(t, d * 0.06)
+        const cx = pad + q * (cell + gap) + cell / 2, cy = pad + r * (cell + gap) + cell / 2
+        tiles.push({ x: cx, y: cy, s: cell * e })
+      }
+      ctx.save()
+      tiles.forEach((tl, i) => {
+        if (tl.s < 0.5 || i % 5) return
+        ctx.fillStyle = rgba(i % 2 ? o.primary : o.accent, 0.9)
+        ctx.beginPath(); ctx.roundRect(tl.x - tl.s / 2 + S * 0.012, tl.y - tl.s / 2 + S * 0.012, tl.s, tl.s, tl.s * 0.28); ctx.fill()
+      })
+      ctx.restore()
+      photoThrough(ctx, o, S, () => tiles.forEach((tl) => { if (tl.s > 0.5) ctx.roundRect(tl.x - tl.s / 2, tl.y - tl.s / 2, tl.s, tl.s, tl.s * 0.28) }))
+      break
+    }
+    case 'ribbons': {
+      const n = 5, gap = S * 0.022, pad = S * 0.07
+      const bh = (S - pad * 2 - gap * (n - 1)) / n
+      const insets = [0.16, 0.06, 0, 0.04, 0.14]
+      const bands = Array.from({ length: n }, (_, k) => {
+        const e = envelope(t, k * 0.03)
+        const fullX = pad + S * insets[k], fullW = S - pad * 2 - S * insets[k] * 1.3
+        const w = fullW * e
+        const x = k % 2 ? fullX + fullW - w : fullX
+        return { x, w, y: pad + k * (bh + gap) }
+      })
+      ctx.save()
+      ctx.fillStyle = rgba(o.primary, 0.88)
+      bands.forEach((b) => { if (b.w > 0.5) { ctx.beginPath(); ctx.roundRect(b.x + S * 0.02, b.y + S * 0.014, b.w, bh, bh / 2); ctx.fill() } })
+      ctx.restore()
+      photoThrough(ctx, o, S, () => bands.forEach((b) => { if (b.w > 0.5) ctx.roundRect(b.x, b.y, b.w, bh, bh / 2) }))
+      break
+    }
     case 'orbit': {
       const grad = ctx.createConicGradient(t * TAU, cx, cy)
       grad.addColorStop(0, o.primary)
@@ -262,6 +392,7 @@ function encode(frames: number, delay: number, w: number, h: number, draw: (ctx:
 
 const EFFECT_TIMING: Record<PhotoEffect, [frames: number, delay: number]> = {
   orbit: [28, 65], halo: [26, 70], shine: [30, 70], sparkle: [28, 75], breathe: [28, 75], hello: [28, 70], draw: [34, 65],
+  shards: [32, 70], blinds: [30, 70], mosaic: [30, 75], ribbons: [30, 70],
 }
 
 export function photoGif(o: PhotoGifOptions): Blob {
