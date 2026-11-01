@@ -44,7 +44,7 @@ export default function Signatures() {
                     </div>
                     <div className="mt-0.5 text-xs text-muted">{t.name} · edited {timeAgo(s.updatedAt)}</div>
                   </div>
-                  <button className="btn btn-line btn-sm" onClick={async () => { await copyRich(renderSignature(s, { campaigns })); toast('Signature copied') }}><Copy size={14} /> Copy</button>
+                  <button className="btn btn-line btn-sm" onClick={async () => { try { await copyRich(renderSignature(s, { campaigns })); toast('Signature copied') } catch (err) { toast((err as Error).message) } }}><Copy size={14} /> Copy</button>
                   <div className="relative">
                     <button className="btn btn-ghost btn-sm btn-icon" onClick={() => setMenu(menu === s.id ? null : s.id)} aria-label="More"><MoreHorizontal size={16} /></button>
                     {menu === s.id && (

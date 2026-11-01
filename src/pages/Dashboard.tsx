@@ -106,7 +106,7 @@ export default function Dashboard() {
                 <span className="text-xs text-muted"> · {templateById(primary.templateId).name} · edited {timeAgo(primary.updatedAt)}</span>
               </div>
               <div className="flex shrink-0 gap-1">
-                <button className="btn btn-ghost btn-sm" onClick={async () => { await copyRich(renderSignature(primary, { campaigns })); toast('Signature copied') }}><Copy size={14} /> Copy</button>
+                <button className="btn btn-ghost btn-sm" onClick={async () => { try { await copyRich(renderSignature(primary, { campaigns })); toast('Signature copied') } catch (err) { toast((err as Error).message) } }}><Copy size={14} /> Copy</button>
                 <button className="btn btn-ghost btn-sm" onClick={() => navigate(`/editor/${primary.id}`)}>Edit <ArrowRight size={14} /></button>
               </div>
             </div>

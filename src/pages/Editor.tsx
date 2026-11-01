@@ -97,8 +97,12 @@ export default function Editor() {
   const setX = <K extends keyof Signature['extras']>(k: K, v: Signature['extras'][K]) => set('extras', { ...sig.extras, [k]: v })
 
   const doCopy = async () => {
-    await copyRich(renderSignature(sig, { campaigns: store.campaigns }))
-    toast('Signature copied — paste it into your mail settings')
+    try {
+      await copyRich(renderSignature(sig, { campaigns: store.campaigns }))
+      toast('Signature copied — paste it into your mail settings')
+    } catch (err) {
+      toast((err as Error).message)
+    }
   }
 
   return (

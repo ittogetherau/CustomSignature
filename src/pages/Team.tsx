@@ -158,7 +158,7 @@ export default function Team() {
                   <td className="py-3 pr-4 text-right">
                     <div className="flex justify-end gap-1 opacity-60 transition group-hover:opacity-100">
                       <button className="btn btn-ghost btn-sm" onClick={() => setView(e)}><Eye size={14} /> Preview</button>
-                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Copy" onClick={async () => { await copyRich(renderSignature(sigFor(e), { campaigns })); toast(`Copied ${e.fullName.split(' ')[0]}'s signature`) }}><Copy size={14} /></button>
+                      <button className="btn btn-ghost btn-sm btn-icon" aria-label="Copy" onClick={async () => { try { await copyRich(renderSignature(sigFor(e), { campaigns })); toast(`Copied ${e.fullName.split(' ')[0]}'s signature`) } catch (err) { toast((err as Error).message) } }}><Copy size={14} /></button>
                     </div>
                   </td>
                 </tr>
@@ -189,7 +189,7 @@ export default function Team() {
       <Modal open={!!view} onClose={() => setView(null)} title={view?.fullName ?? ''} subtitle={view ? `${templateById(view.templateId ?? brand.defaultTemplateId).name} · generated from your brand kit` : ''} width={720}
         footer={view && <>
           <button className="btn btn-line" onClick={() => download(`${view.fullName.replace(/\s+/g, '-').toLowerCase()}.html`, exportDocument(sigFor(view), { campaigns }))}><Download size={15} /> Download</button>
-          <button className="btn btn-clay" onClick={async () => { await copyRich(renderSignature(sigFor(view), { campaigns })); toast('Copied') }}><Copy size={15} /> Copy signature</button>
+          <button className="btn btn-clay" onClick={async () => { try { await copyRich(renderSignature(sigFor(view), { campaigns })); toast('Copied') } catch (err) { toast((err as Error).message) } }}><Copy size={15} /> Copy signature</button>
         </>}>
         {view && <div className="overflow-x-auto rounded-xl border border-line bg-white p-6"><SigThumb html={renderSignature(sigFor(view), { campaigns })} align="left" /></div>}
       </Modal>

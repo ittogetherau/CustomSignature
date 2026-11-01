@@ -1,16 +1,21 @@
 export async function copyRich(html: string) {
   // Pasting into Gmail/Outlook settings needs text/html on the clipboard, not markup as text.
-  if ('ClipboardItem' in window) {
-    await navigator.clipboard.write([
-      new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
-        'text/plain': new Blob([html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()], { type: 'text/plain' }),
-      }),
-    ])
-    return
+  if ('ClipboardItem' in window && navigator.clipboard?.write) {
+    try {
+      await navigator.clipboard.write([
+        new ClipboardItem({
+          'text/html': new Blob([html], { type: 'text/html' }),
+          'text/plain': new Blob([html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()], { type: 'text/plain' }),
+        }),
+      ])
+      return
+    } catch {
+      // Blocked by browser or company policy — fall back to a selection copy below.
+    }
   }
   const el = document.createElement('div')
   el.innerHTML = html
+  el.contentEditable = 'true'
   el.style.position = 'fixed'
   el.style.left = '-9999px'
   document.body.appendChild(el)
@@ -19,9 +24,10 @@ export async function copyRich(html: string) {
   const sel = document.getSelection()!
   sel.removeAllRanges()
   sel.addRange(range)
-  document.execCommand('copy')
+  const ok = document.execCommand('copy')
   sel.removeAllRanges()
   el.remove()
+  if (!ok) throw new Error('Your browser blocked copying — use Download instead')
 }
 
 export const copyText = (text: string) => navigator.clipboard.writeText(text)
