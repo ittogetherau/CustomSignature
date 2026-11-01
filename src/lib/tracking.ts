@@ -20,7 +20,7 @@ const SOCIAL_HOSTS: [RegExp, string][] = [
 function hash(s: string, seed: number) {
   let h = seed >>> 0
   for (let i = 0; i < s.length; i++) h = Math.imul(h ^ s.charCodeAt(i), 2654435761) >>> 0
-  h ^= h >>> 16
+  h = (h ^ (h >>> 16)) >>> 0 // keep it unsigned: codes must be [a-z0-9] only
   return h.toString(36).padStart(7, '0').slice(-7)
 }
 
