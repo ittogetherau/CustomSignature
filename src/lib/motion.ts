@@ -30,7 +30,7 @@ export interface PhotoGifOptions {
 
 /** Photo GIFs reserve a margin for rings and bubbles; the photo fills this share of the width. */
 export const PHOTO_FILL = 0.66
-const SIZE = 220
+const SIZE = 200
 const TAU = Math.PI * 2
 const ease = (x: number) => 0.5 - Math.cos(Math.PI * x) / 2
 
@@ -246,18 +246,22 @@ function encode(frames: number, delay: number, w: number, h: number, draw: (ctx:
   canvas.height = h
   const ctx = canvas.getContext('2d', { willReadFrequently: true })!
   const gif = GIFEncoder()
+  // One palette for the whole loop (sampled across frames): smaller files, no colour flicker.
+  const samples = [0, 0.25, 0.5, 0.75].map((t) => { draw(ctx, t); return ctx.getImageData(0, 0, w, h).data })
+  const merged = new Uint8ClampedArray(samples.reduce((n, d) => n + d.length, 0))
+  samples.reduce((o, d) => { merged.set(d, o); return o + d.length }, 0)
+  const palette = quantize(merged, 256)
   for (let i = 0; i < frames; i++) {
     draw(ctx, i / frames)
     const { data } = ctx.getImageData(0, 0, w, h)
-    const palette = quantize(data, 256)
-    gif.writeFrame(applyPalette(data, palette), w, h, { palette, delay })
+    gif.writeFrame(applyPalette(data, palette), w, h, { palette: i === 0 ? palette : undefined, delay })
   }
   gif.finish()
   return new Blob([gif.bytes()], { type: 'image/gif' })
 }
 
 const EFFECT_TIMING: Record<PhotoEffect, [frames: number, delay: number]> = {
-  orbit: [36, 50], halo: [32, 55], shine: [40, 55], sparkle: [36, 60], breathe: [36, 60], hello: [36, 55], draw: [44, 50],
+  orbit: [28, 65], halo: [26, 70], shine: [30, 70], sparkle: [28, 75], breathe: [28, 75], hello: [28, 70], draw: [34, 65],
 }
 
 export function photoGif(o: PhotoGifOptions): Blob {

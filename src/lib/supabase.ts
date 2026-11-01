@@ -15,7 +15,7 @@ export const supabase = createClient(url ?? 'http://localhost:54321', anonKey ??
 export const MS_LOGIN_SCOPES = 'openid profile email offline_access User.Read'
 
 export async function uploadAsset(orgId: string, file: Blob, name: string) {
-  const ext = file.type === 'image/png' ? 'png' : file.type === 'image/svg+xml' ? 'svg' : 'jpg'
+  const ext = { 'image/png': 'png', 'image/svg+xml': 'svg', 'image/gif': 'gif', 'image/webp': 'webp' }[file.type] ?? 'jpg'
   const path = `${orgId}/${name}-${crypto.randomUUID().slice(0, 8)}.${ext}`
   const { error } = await supabase.storage.from('assets').upload(path, file, { contentType: file.type, cacheControl: '31536000', upsert: false })
   if (error) throw error
