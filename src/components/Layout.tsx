@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { BarChart3, ChevronUp, LayoutGrid, LogOut, Megaphone, Menu, Palette, PenLine, Plus, Settings, Users, X, Home } from 'lucide-react'
 import clsx from 'clsx'
@@ -17,31 +17,40 @@ const NAV = [
 ]
 
 /** IT Together monogram — the triangular "A" mark, redrawn as a crisp vector. */
-export function ITTogetherMark({ size = 16, color = '#1a6ad8' }: { size?: number; color?: string }) {
+/**
+ * Inkwell mark: a fountain-pen nib pointing up, so it doubles as IT Together's peak.
+ * IT Together blue badge, Inkwell clay ink drop.
+ */
+export function InkwellMark({ size = 32 }: { size?: number }) {
+  // Unique per instance: a gradient inside a hidden copy (e.g. the collapsed sidebar) would blank the others.
+  const id = `inkwell-badge-${useId().replace(/:/g, '')}`
   return (
-    <svg width={size} height={size * 0.82} viewBox="0 0 100 82" aria-hidden fill="none" stroke={color} strokeWidth="10" strokeLinejoin="miter" strokeLinecap="butt">
-      <path d="M50 6 L95 77 L62 77" />
-      <path d="M41 21 L60 48 L44 71" />
-      <path d="M30 38 L8 77 L28 77" />
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden className="shrink-0">
+      <defs>
+        <linearGradient id={id} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#2b7bea" />
+          <stop offset="1" stopColor="#0f3f8f" />
+        </linearGradient>
+      </defs>
+      <rect width="32" height="32" rx="9" fill={`url(#${id})`} />
+      <path d="M16 5.5 L23 18.2 Q23.6 20.6 21.2 22 L10.8 22 Q8.4 20.6 9 18.2 Z" fill="#ffffff" />
+      <rect x="11" y="23.6" width="10" height="3" rx="1.2" fill="#ffffff" />
+      <path d="M16 8.5 V15" stroke="#1450ad" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="16" cy="17" r="2.1" fill="#e2643b" />
     </svg>
   )
 }
 
-/** Product lockup: Inkwell, by IT Together. */
+/** Product lockup: Inkwell, endorsed "by IT Together". */
 export function Logo({ light = false, compact = false }: { light?: boolean; compact?: boolean }) {
-  const itBlue = light ? '#7fb2ff' : '#1a6ad8'
   return (
     <div className="flex items-center gap-2.5">
-      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden className="shrink-0">
-        <rect width="32" height="32" rx="8" fill={light ? '#f6f2ea' : '#1c1917'} />
-        <path d="M7 22c3 0 4-10 7-10s1 8 4 8 3-5 7-5" stroke="#e2643b" strokeWidth="2.6" fill="none" strokeLinecap="round" />
-      </svg>
-      <span className="flex flex-col leading-none">
-        <span className={clsx('h-display text-[21px] leading-none', light ? 'text-paper' : 'text-ink')}>Inkwell</span>
+      <InkwellMark size={34} />
+      <span className="flex flex-col justify-center">
+        <span className={clsx('h-display text-[22px] leading-[1]', light ? 'text-paper' : 'text-ink')}>Inkwell</span>
         {!compact && (
-          <span className={clsx('mt-1 flex items-center gap-1 text-[11.5px] font-semibold tracking-wide', light ? 'text-paper/55' : 'text-muted')}>
-            by <ITTogetherMark size={14} color={itBlue} />
-            <span style={{ color: itBlue }} className="font-bold">IT<span className="font-semibold italic">together</span></span>
+          <span className={clsx('mt-[5px] text-[9.5px] font-bold uppercase leading-none tracking-[0.18em]', light ? 'text-paper/60' : 'text-muted')}>
+            by <span className={light ? 'text-[#8ab8ff]' : 'text-[#1a6ad8]'}>IT Together</span>
           </span>
         )}
       </span>
