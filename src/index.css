@@ -106,3 +106,33 @@ body::before {
 
 /* scaled, non-interactive signature thumbnails */
 .sig-thumb { pointer-events: none; transform-origin: top left; }
+
+/* ---------- marketing site ---------- */
+.reveal { opacity: 0; transform: translateY(18px); transition: opacity .7s cubic-bezier(.2,.8,.2,1), transform .7s cubic-bezier(.2,.8,.2,1); }
+.reveal.is-in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
+
+@keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.marquee { animation: marquee 38s linear infinite; }
+.marquee:hover { animation-play-state: paused; }
+
+@keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+.floaty { animation: floaty 5s ease-in-out infinite; }
+
+@keyframes blob { 0%,100% { transform: translate(0,0) scale(1); } 33% { transform: translate(30px,-20px) scale(1.08); } 66% { transform: translate(-20px,15px) scale(.95); } }
+.blob { animation: blob 16s ease-in-out infinite; }
+
+.mesh { background:
+  radial-gradient(40rem 30rem at 85% -10%, rgb(226 100 59 / .18), transparent 60%),
+  radial-gradient(36rem 28rem at -10% 20%, rgb(15 118 110 / .16), transparent 60%),
+  radial-gradient(30rem 24rem at 60% 110%, rgb(243 210 122 / .25), transparent 60%); }
+
+.prose-ink h2 { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; font-size: 1.65rem; line-height: 1.2; margin: 2.2rem 0 .7rem; }
+.prose-ink h3 { font-weight: 700; font-size: 1.1rem; margin: 1.6rem 0 .5rem; }
+.prose-ink p { margin: .9rem 0; line-height: 1.75; color: var(--color-ink-3); font-size: 1.04rem; }
+.prose-ink ul { margin: .9rem 0; padding-left: 1.2rem; list-style: disc; color: var(--color-ink-3); }
+.prose-ink ol { margin: .9rem 0; padding-left: 1.2rem; list-style: decimal; color: var(--color-ink-3); }
+.prose-ink li { margin: .35rem 0; line-height: 1.7; }
+.prose-ink strong { color: var(--color-ink); }
+.prose-ink blockquote { margin: 1.4rem 0; padding: .9rem 1.2rem; border-left: 3px solid var(--color-clay); background: var(--color-clay-soft); border-radius: 0 12px 12px 0; color: var(--color-ink-2); }
+.prose-ink code { font-family: ui-monospace, monospace; font-size: .9em; background: var(--color-paper-2); padding: .1rem .35rem; border-radius: 5px; }

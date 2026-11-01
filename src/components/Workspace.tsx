@@ -5,7 +5,8 @@ import { useAuth } from '../auth'
 import { supabase } from '../lib/supabase'
 import { StoreProvider } from '../store'
 import type { BrandKit, Organization, Role } from '../types'
-import Landing from '../pages/Landing'
+import Home from '../marketing/Home'
+import { MarketingLayout } from '../marketing/kit'
 
 type Membership = { role: Role; org: Organization & { brand: BrandKit } }
 
@@ -45,7 +46,7 @@ export default function RequireWorkspace() {
   }, [user])
 
   if (loading) return <Splash label="Loading…" />
-  if (!user) return loc.pathname === '/' ? <Landing /> : <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />
+  if (!user) return loc.pathname === '/' ? <MarketingLayout><Home /></MarketingLayout> : <Navigate to={`/login?next=${encodeURIComponent(loc.pathname + loc.search)}`} replace />
   if (membership === undefined) return <Splash />
   if (membership === null) return <Navigate to="/onboarding" replace />
 

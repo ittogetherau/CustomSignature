@@ -16,6 +16,8 @@ import { Forgot, Login, MicrosoftCallback, Onboarding, ResetPassword, Signup } f
 import Setup from './pages/Setup'
 import Settings from './pages/Settings'
 import { Privacy, Terms } from './pages/Legal'
+import { MarketingLayout } from './marketing/kit'
+import { Blog, BlogPost, Contact, Features, Microsoft365, Pricing, Security, Showcase } from './marketing/Pages'
 
 export default function App() {
   if (!supabaseConfigured) return <Setup />
@@ -30,6 +32,16 @@ export default function App() {
             <Route path="reset-password" element={<ResetPassword />} />
             <Route path="onboarding" element={<Onboarding />} />
             <Route path="microsoft/callback" element={<MicrosoftCallback />} />
+            <Route element={<MarketingLayout />}>
+              <Route path="features" element={<Features />} />
+              <Route path="microsoft-365" element={<Microsoft365 />} />
+              <Route path="showcase" element={<Showcase />} />
+              <Route path="pricing" element={<Pricing />} />
+              <Route path="security" element={<Security />} />
+              <Route path="blog" element={<Blog />} />
+              <Route path="blog/:slug" element={<BlogPost />} />
+              <Route path="contact" element={<Contact />} />
+            </Route>
             <Route path="terms" element={<Terms />} />
             <Route path="privacy" element={<Privacy />} />
             <Route element={<RequireWorkspace />}>

@@ -98,10 +98,11 @@ export function SigThumb({ html, max = 1, maxH, className, align = 'center' }: {
   }, [html, max, maxH])
 
   return (
-    <div ref={outer} className={clsx('w-full', className)} style={{ height: box.h || undefined }}>
+    // The natural-size render is absolutely positioned so it never widens its container (grids, mobile).
+    <div ref={outer} className={clsx('relative w-full min-w-0 overflow-hidden', className)} style={{ height: box.h || undefined }}>
       <div
         ref={inner}
-        className="sig-thumb w-max"
+        className="sig-thumb absolute left-0 top-0 w-max"
         style={{ transform: `scale(${box.scale})`, marginLeft: align === 'center' ? `calc(50% - ${box.w / 2}px)` : 0 }}
         dangerouslySetInnerHTML={{ __html: html }}
       />
