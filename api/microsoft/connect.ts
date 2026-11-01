@@ -9,6 +9,14 @@ export const maxDuration = 60
  *  - link_required:     the caller has no Microsoft work account linked to their login
  */
 export async function POST(req: Request) {
+  try {
+    return await handle(req)
+  } catch (e) {
+    return json({ error: (e as Error).message }, 500)
+  }
+}
+
+async function handle(req: Request) {
   let orgId: string | undefined
   try {
     orgId = ((await req.json()) as { orgId?: string }).orgId

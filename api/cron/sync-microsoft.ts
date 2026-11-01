@@ -4,6 +4,14 @@ export const maxDuration = 60
 
 /** Daily job (vercel.json → crons): re-sync every workspace linked to a Microsoft tenant. */
 export async function GET(req: Request) {
+  try {
+    return await handle(req)
+  } catch (e) {
+    return json({ error: (e as Error).message }, 500)
+  }
+}
+
+async function handle(req: Request) {
   if (req.headers.get('authorization') !== `Bearer ${env('CRON_SECRET')}`) return json({ error: 'Unauthorized' }, 401)
 
   const db = admin()

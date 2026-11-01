@@ -14,10 +14,19 @@ export function env(name: string) {
   return v
 }
 
+/** VITE_* values only exist at build time, so derive the project URL from the service key's `ref` claim. */
+function supabaseUrl(serviceKey: string) {
+  if (process.env.SUPABASE_URL) return process.env.SUPABASE_URL
+  try {
+    const ref = JSON.parse(Buffer.from(serviceKey.split('.')[1], 'base64url').toString()).ref
+    if (ref) return `https://${ref}.supabase.co`
+  } catch { /* fall through */ }
+  throw new Error('Server is missing SUPABASE_URL')
+}
+
 export function admin(): SupabaseClient {
-  return createClient(process.env.SUPABASE_URL ?? env('VITE_SUPABASE_URL'), env('SUPABASE_SERVICE_ROLE_KEY'), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  })
+  const key = env('SUPABASE_SERVICE_ROLE_KEY')
+  return createClient(supabaseUrl(key), key, { auth: { persistSession: false, autoRefreshToken: false } })
 }
 
 export const appUrl = (req?: Request) => process.env.APP_URL ?? (req ? new URL(req.url).origin : 'https://custom-signature-phi.vercel.app')
