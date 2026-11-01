@@ -3,7 +3,7 @@ import { CalendarDays, ImagePlus, LayoutGrid, Loader2, Megaphone, Palette, Pause
 import clsx from 'clsx'
 import { useStore } from '../store'
 import type { BannerDesign, Campaign } from '../types'
-import { BANNER_CATEGORIES, BANNER_PALETTES, BANNER_TEMPLATES, BH, BW, bannerGif, bannerJpeg, bannerTemplate, ensureBannerFonts, mix, paintBanner, type BannerData, type BannerTemplate } from '../lib/banners'
+import { BANNER_CATEGORIES, BANNER_PALETTES, BANNER_TEMPLATES, BH, BW, bannerGif, bannerJpeg, bannerTemplate, contrast, ensureBannerFonts, mix, paintBanner, type BannerData, type BannerTemplate } from '../lib/banners'
 import { assetKey, loadImage } from '../lib/motion'
 import { uploadAsset } from '../lib/supabase'
 import { bannerHtml } from '../lib/render'
@@ -109,8 +109,16 @@ function CampaignEditor({ value, onClose, onSave }: { value: Campaign; onClose: 
   const brandColours = () => {
     if (!tpl) return
     // Light-background templates need tints so dark text stays readable.
-    if (tpl.ink === 'dark') setC((p) => ({ ...p, from: mix(brand.primary, '#ffffff', 0.86), to: mix(brand.accent, '#ffffff', 0.8), design: { ...(p.design as BannerDesign), accent: brand.primary } }))
-    else setC((p) => ({ ...p, from: mix(brand.primary, '#000000', 0.25), to: brand.primary, design: { ...(p.design as BannerDesign), accent: brand.accent } }))
+    if (tpl.ink === 'dark') {
+      const from = mix(brand.primary, '#ffffff', 0.86), to = mix(brand.accent, '#ffffff', 0.8)
+      const accent = contrast(brand.primary, to) >= 3 ? brand.primary : mix(brand.primary, '#000000', 0.45)
+      setC((p) => ({ ...p, from, to, design: { ...(p.design as BannerDesign), accent } }))
+    } else {
+      const from = mix(brand.primary, '#000000', 0.25), to = brand.primary
+      // A button the same colour as the background disappears — fall back to white.
+      const accent = Math.min(contrast(brand.accent, from), contrast(brand.accent, to)) >= 2.2 ? brand.accent : '#ffffff'
+      setC((p) => ({ ...p, from, to, design: { ...(p.design as BannerDesign), accent } }))
+    }
   }
 
   const save = async () => {

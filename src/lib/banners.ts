@@ -53,6 +53,8 @@ export const mix = (a: string, b: string, t: number) => {
 }
 const luminance = (hex: string) => { const [r, g, b] = rgb(hex).map((v) => { const c = v / 255; return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4 }); return 0.2126 * r + 0.7152 * g + 0.0722 * b }
 export const onColor = (hex: string) => (luminance(hex) > 0.45 ? '#14110f' : '#ffffff')
+/** WCAG contrast ratio between two colours (1–21). */
+export const contrast = (a: string, b: string) => { const [x, y] = [luminance(a), luminance(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05) }
 
 /** Deterministic pseudo-random, so animation frames line up and previews are stable. */
 function rng(seed: number) { let s = seed >>> 0 || 1; return () => ((s = Math.imul(s ^ (s >>> 15), 2246822507) ^ Math.imul(s ^ (s >>> 13), 3266489909)) >>> 0) / 4294967296 }
@@ -309,7 +311,8 @@ function gift(g: Painter, x: number, y: number, w: number, h: number, box: strin
 function snow(g: Painter, t: number, seed = 7, n = 26) {
   const r = rng(seed)
   for (let i = 0; i < n; i++) {
-    const x = r() * BW, size = 6 + r() * 9, speed = 0.6 + r() * 0.8, sway = r() * TAU
+    // Keep the copy side clear so headlines stay readable.
+    const x = 350 + r() * (BW - 350), size = 6 + r() * 9, speed = 0.6 + r() * 0.8, sway = r() * TAU
     const y = ((r() * BH + t * BH * speed) % (BH + 20)) - 10
     g.ctx.globalAlpha = 0.35 + r() * 0.55
     g.icon('Snowflake', x + Math.sin(t * TAU + sway) * 6 - size / 2, y - size / 2, size, '#ffffff', 1.6)
