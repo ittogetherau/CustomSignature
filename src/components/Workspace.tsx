@@ -30,7 +30,7 @@ export default function RequireWorkspace() {
     supabase.rpc('accept_invitations').then(() =>
     supabase
       .from('memberships')
-      .select('role, organizations(id, name, brand, ms_tenant_id)')
+      .select('role, organizations(id, name, brand, ms_tenant_id, ms_synced_at, ms_sync_status)')
       .eq('user_id', user.id)
       .order('created_at')
       .limit(1)
@@ -38,8 +38,8 @@ export default function RequireWorkspace() {
       .then(({ data, error }) => {
         if (!live) return
         if (error || !data?.organizations) return setMembership(null)
-        const o = data.organizations as unknown as { id: string; name: string; brand: BrandKit; ms_tenant_id: string | null }
-        setMembership({ role: data.role as Role, org: { id: o.id, name: o.name, brand: o.brand, msTenantId: o.ms_tenant_id } })
+        const o = data.organizations as unknown as { id: string; name: string; brand: BrandKit; ms_tenant_id: string | null; ms_synced_at: string | null; ms_sync_status: string | null }
+        setMembership({ role: data.role as Role, org: { id: o.id, name: o.name, brand: o.brand, msTenantId: o.ms_tenant_id, msSyncedAt: o.ms_synced_at ? Date.parse(o.ms_synced_at) : null, msSyncStatus: o.ms_sync_status } })
       }))
     return () => { live = false }
   }, [user])

@@ -48,7 +48,8 @@ interface Store extends State {
   saveCampaign: (c: Campaign) => void
   deleteCampaign: (id: string) => void
   setBrand: (b: BrandKit) => void
-  setTenant: (tenantId: string) => void
+  /** Re-read org metadata (e.g. after the server ran a Microsoft sync). */
+  refreshOrg: () => Promise<void>
   reload: () => Promise<void>
 }
 
@@ -56,7 +57,7 @@ const Ctx = createContext<Store | null>(null)
 
 export function StoreProvider({ org: initialOrg, role, userId, children }: { org: Organization & { brand: BrandKit }; role: Role; userId: string; children: ReactNode }) {
   const toast = useToast()
-  const [org, setOrg] = useState<Organization>({ id: initialOrg.id, name: initialOrg.name, msTenantId: initialOrg.msTenantId })
+  const [org, setOrg] = useState<Organization>({ id: initialOrg.id, name: initialOrg.name, msTenantId: initialOrg.msTenantId, msSyncedAt: initialOrg.msSyncedAt, msSyncStatus: initialOrg.msSyncStatus })
   const [state, setState] = useState<State>({ signatures: [], employees: [], campaigns: [], brand: { ...DEFAULT_BRAND, ...initialOrg.brand } })
   const [loading, setLoading] = useState(true)
   const stateRef = useRef(state)
@@ -158,9 +159,9 @@ export function StoreProvider({ org: initialOrg, role, userId, children }: { org
         setOrg((o) => ({ ...o, name }))
         write('Saving brand kit', supabase.from('organizations').update({ brand, name }).eq('id', orgId))
       },
-      setTenant: (tenantId) => {
-        setOrg((o) => ({ ...o, msTenantId: tenantId }))
-        write('Linking Microsoft tenant', supabase.from('organizations').update({ ms_tenant_id: tenantId }).eq('id', orgId))
+      refreshOrg: async () => {
+        const { data } = await supabase.from('organizations').select('name, ms_tenant_id, ms_synced_at, ms_sync_status').eq('id', orgId).single()
+        if (data) setOrg((o) => ({ ...o, name: data.name, msTenantId: data.ms_tenant_id, msSyncedAt: data.ms_synced_at ? Date.parse(data.ms_synced_at) : null, msSyncStatus: data.ms_sync_status }))
       },
     }
   }, [state, org, role, loading, orgId, userId, reload, toast])

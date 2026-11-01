@@ -8,12 +8,12 @@ import { TEMPLATES, templateById, uid, DEFAULT_EXTRAS } from '../lib/templates'
 import { exportDocument, renderSignature } from '../lib/render'
 import { copyRich, download, parseCsv, timeAgo } from '../lib/io'
 import { Avatar, Field, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
-import MicrosoftImport from '../components/MicrosoftImport'
+import MicrosoftConnect from '../components/MicrosoftImport'
 import { MicrosoftLogo } from './Auth'
 
 const STATUS: Record<Employee['status'], { label: string; cls: string }> = {
   active: { label: 'On brand', cls: 'bg-pine-soft text-pine' },
-  outdated: { label: 'Outdated', cls: 'bg-butter-soft text-[#8a6410]' },
+  outdated: { label: 'Left directory', cls: 'bg-butter-soft text-[#8a6410]' },
   invited: { label: 'Invited', cls: 'bg-paper-2 text-muted' },
 }
 
@@ -43,10 +43,10 @@ export default function Team() {
   const [sel, setSel] = useState<string[]>([])
   const [params, setParams] = useSearchParams()
   const [importOpen, setImportOpen] = useState(params.get('import') === 'csv')
-  const [msOpen, setMsOpen] = useState(params.get('import') === 'microsoft')
+  const [msOpen, setMsOpen] = useState(params.get('import') === 'microsoft' || params.get('connect') === 'microsoft')
   useEffect(() => {
     // ?import=… deep links (dashboard buttons, the Microsoft OAuth return) open the matching dialog once.
-    if (params.get('import')) { params.delete('import'); setParams(params, { replace: true }) }
+    if (params.get('import') || params.get('connect')) { params.delete('import'); params.delete('connect'); setParams(params, { replace: true }) }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   const [addOpen, setAddOpen] = useState(false)
@@ -77,9 +77,11 @@ export default function Team() {
       <PageHeader
         eyebrow="Signature manager"
         title="Team manager"
-        subtitle="One brand kit, every employee. Import your people, assign a template, and everyone gets a consistent, compliant signature."
+        subtitle={store.org.msTenantId
+          ? <span className="inline-flex flex-wrap items-center gap-2"><span className="inline-flex items-center gap-1.5 rounded-full bg-pine-soft px-2.5 py-0.5 text-xs font-semibold text-pine"><MicrosoftLogo size={11} /> Auto-sync on</span>{store.org.msSyncedAt ? `Last synced ${timeAgo(store.org.msSyncedAt)}` : 'Waiting for first sync'}{store.org.msSyncStatus && store.org.msSyncStatus !== 'ok' && <span className="text-clay-ink">· {store.org.msSyncStatus === 'consent_revoked' ? 'Microsoft access was revoked — reconnect' : 'Last sync failed'}</span>}</span>
+          : 'One brand kit, every employee. Connect Microsoft 365 or import a CSV, and everyone gets a consistent, compliant signature.'}
         actions={<>
-          <button className="btn btn-line" onClick={() => setMsOpen(true)}><MicrosoftLogo size={15} /> {employees.some((e) => e.source === 'microsoft') ? 'Sync Microsoft 365' : 'Import from Microsoft 365'}</button>
+          <button className="btn btn-line" onClick={() => setMsOpen(true)}><MicrosoftLogo size={15} /> {store.org.msTenantId ? 'Sync now' : 'Connect Microsoft 365'}</button>
           <button className="btn btn-line" onClick={() => setImportOpen(true)}><Upload size={16} /> CSV import</button>
           <button className="btn btn-ink" onClick={() => setAddOpen(true)}><UserPlus size={16} /> Add person</button>
         </>}
@@ -168,7 +170,7 @@ export default function Team() {
                       <h3 className="h-display text-2xl">Bring in your team</h3>
                       <p className="mt-1 text-sm text-muted">Everyone you add gets a signature built from your brand kit. Re-sync any time people join or change roles.</p>
                       <div className="mt-5 flex flex-wrap justify-center gap-2">
-                        <button className="btn btn-ink" onClick={() => setMsOpen(true)}><MicrosoftLogo size={15} /> Import from Microsoft 365</button>
+                        <button className="btn btn-ink" onClick={() => setMsOpen(true)}><MicrosoftLogo size={15} /> Connect Microsoft 365</button>
                         <button className="btn btn-line" onClick={() => setImportOpen(true)}><Upload size={15} /> Upload CSV</button>
                         <button className="btn btn-ghost" onClick={() => setAddOpen(true)}><UserPlus size={15} /> Add one person</button>
                       </div>
@@ -182,7 +184,7 @@ export default function Team() {
       </div>
 
       <ImportModal open={importOpen} onClose={() => setImportOpen(false)} />
-      <MicrosoftImport open={msOpen} onClose={() => setMsOpen(false)} />
+      <MicrosoftConnect open={msOpen} onClose={() => setMsOpen(false)} />
       <AddModal open={addOpen} onClose={() => setAddOpen(false)} />
       <Modal open={!!view} onClose={() => setView(null)} title={view?.fullName ?? ''} subtitle={view ? `${templateById(view.templateId ?? brand.defaultTemplateId).name} · generated from your brand kit` : ''} width={720}
         footer={view && <>

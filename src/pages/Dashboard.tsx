@@ -143,7 +143,7 @@ export default function Dashboard() {
               <div className="mt-3">
                 <p className="text-sm text-muted">Import your people to generate everyone's signature at once.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Link to="/team?import=microsoft" className="btn btn-line btn-sm"><MicrosoftLogo size={13} /> Microsoft 365</Link>
+                  <Link to="/team?connect=microsoft" className="btn btn-line btn-sm"><MicrosoftLogo size={13} /> Connect Microsoft 365</Link>
                   <Link to="/team?import=csv" className="btn btn-ghost btn-sm"><Upload size={14} /> CSV</Link>
                 </div>
               </div>

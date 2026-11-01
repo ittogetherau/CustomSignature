@@ -221,7 +221,9 @@ export function Onboarding() {
     const { error } = await supabase.rpc('create_organization', { org_name: company.trim(), org_brand: { ...DEFAULT_BRAND, company: company.trim(), website: website.trim() } })
     setBusy(false)
     if (error) return setErr(error.message)
-    navigate('/', { replace: true })
+    // Microsoft users go straight into directory connection — for admins that's one approval click.
+    const viaMicrosoft = user.identities?.some((i) => i.provider === 'azure')
+    navigate(viaMicrosoft ? '/team?connect=microsoft' : '/', { replace: true })
   }
 
   return (
@@ -233,6 +235,26 @@ export function Onboarding() {
         <button className="btn btn-clay h-11 w-full" disabled={busy || !company.trim()}>{busy ? <Loader2 size={16} className="animate-spin" /> : <>Create workspace <ArrowRight size={16} /></>}</button>
       </form>
       <button className="mt-6 w-full text-center text-sm text-muted hover:text-ink" onClick={() => supabase.auth.signOut()}>Signed in as {user.email} · Sign out</button>
+    </AuthShell>
+  )
+}
+
+/** Where Microsoft sends the admin back after approving (or declining) directory access. */
+export function MicrosoftCallback() {
+  const { user, loading } = useAuth()
+  const [params] = useSearchParams()
+  const ok = params.get('admin_consent')?.toLowerCase() === 'true'
+  const error = params.get('error_description') || params.get('error')
+  if (loading) return <Splash label="Loading…" />
+  if (ok && user) return <Navigate to="/team?connect=microsoft" replace />
+  return (
+    <AuthShell title={ok ? 'Approved — thank you' : 'Approval not completed'} subtitle={ok ? 'Inkwell can now read your organisation’s directory.' : 'Directory access wasn’t granted.'}>
+      {ok ? (
+        <div className="card p-4 text-sm leading-relaxed text-ink-3">Your colleague can now open <strong>Team → Connect Microsoft 365</strong> in Inkwell and everyone will be imported automatically. Nothing else is needed from you.</div>
+      ) : (
+        <div className="card p-4 text-sm leading-relaxed text-ink-3">{error ? error.split(/\r?\n/)[0] : 'The request was cancelled.'} You can try again from the Team page.</div>
+      )}
+      <Link to={user ? '/team' : '/login'} className="btn btn-ink mt-6 w-full">{user ? 'Go to Team' : 'Sign in to Inkwell'}</Link>
     </AuthShell>
   )
 }

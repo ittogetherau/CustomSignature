@@ -111,11 +111,11 @@ export default function Landing() {
             <div>
               <div className="flex items-center gap-2 text-sm font-semibold text-paper/70"><MicrosoftLogo size={18} /> Microsoft 365 integration</div>
               <h2 className="h-display mt-4 text-[34px] leading-tight md:text-[42px]">Bring your whole directory in one click.</h2>
-              <p className="mt-4 max-w-md text-paper/65">Sign in with your work account, approve access once, and Inkwell pulls names, titles, departments, phone numbers and profile photos from Microsoft Entra ID. Re-sync any time people join or change roles.</p>
+              <p className="mt-4 max-w-md text-paper/65">Sign in with your work account and your admin approves access with one click. Inkwell imports names, titles, departments, phones and photos from Microsoft Entra ID — then keeps everyone in sync automatically, every day.</p>
               <Link to="/signup" className="btn btn-clay mt-7 h-11 px-5">Connect Microsoft 365 <ArrowRight size={16} /></Link>
             </div>
             <ol className="space-y-3">
-              {['Sign in with Microsoft', 'Admin approves directory access', 'Pick people & departments', 'Everyone gets an on-brand signature'].map((s, k) => (
+              {['Sign in with Microsoft', 'Admin approves with one click', 'Your whole directory imports', 'New starters & changes sync daily'].map((s, k) => (
                 <li key={s} className="flex items-center gap-4 rounded-2xl border border-paper/10 bg-paper/[0.04] px-5 py-4">
                   <span className="grid size-8 shrink-0 place-items-center rounded-full bg-butter text-sm font-bold text-ink">{k + 1}</span>
                   <span className="font-medium">{s}</span>

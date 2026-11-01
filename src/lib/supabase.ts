@@ -10,8 +10,8 @@ export const supabase = createClient(url ?? 'http://localhost:54321', anonKey ??
   auth: { flowType: 'pkce', persistSession: true, autoRefreshToken: true, detectSessionInUrl: true },
 })
 
-/** Graph scope needed to read the customer's directory. Requires one-time admin consent per tenant. */
-export const MS_DIRECTORY_SCOPES = 'openid profile email offline_access User.Read User.Read.All'
+// Sign-in only needs the basic profile. Directory access is granted separately, once per
+// company, through the admin-consent flow handled by /api/microsoft/connect.
 export const MS_LOGIN_SCOPES = 'openid profile email offline_access User.Read'
 
 export async function uploadAsset(orgId: string, file: Blob, name: string) {

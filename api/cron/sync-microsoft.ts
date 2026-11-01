@@ -1,0 +1,31 @@
+import { ConsentRequired, admin, env, json, syncOrg } from '../_lib/microsoft.js'
+
+export const maxDuration = 60
+
+/** Daily job (vercel.json → crons): re-sync every workspace linked to a Microsoft tenant. */
+export async function GET(req: Request) {
+  if (req.headers.get('authorization') !== `Bearer ${env('CRON_SECRET')}`) return json({ error: 'Unauthorized' }, 401)
+
+  const db = admin()
+  // Least recently synced first, so a run that hits the time limit picks up where the last one stopped.
+  const { data: orgs, error } = await db
+    .from('organizations')
+    .select('id, ms_tenant_id')
+    .not('ms_tenant_id', 'is', null)
+    .order('ms_synced_at', { ascending: true, nullsFirst: true })
+  if (error) return json({ error: error.message }, 500)
+
+  const started = Date.now()
+  const results: Record<string, unknown> = {}
+  for (const org of orgs ?? []) {
+    if (Date.now() - started > 50_000) break
+    try {
+      results[org.id] = await syncOrg(db, org.id, org.ms_tenant_id as string, Math.min(started + 55_000, Date.now() + 20_000))
+    } catch (e) {
+      const status = e instanceof ConsentRequired ? 'consent_revoked' : (e as Error).message.slice(0, 200)
+      await db.from('organizations').update({ ms_sync_status: status }).eq('id', org.id)
+      results[org.id] = { error: status }
+    }
+  }
+  return json({ synced: Object.keys(results).length, results })
+}

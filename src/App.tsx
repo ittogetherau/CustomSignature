@@ -12,7 +12,7 @@ import Team from './pages/Team'
 import Campaigns from './pages/Campaigns'
 import Analytics from './pages/Analytics'
 import Brand from './pages/Brand'
-import { Forgot, Login, Onboarding, ResetPassword, Signup } from './pages/Auth'
+import { Forgot, Login, MicrosoftCallback, Onboarding, ResetPassword, Signup } from './pages/Auth'
 import Setup from './pages/Setup'
 import Settings from './pages/Settings'
 import { Privacy, Terms } from './pages/Legal'
@@ -29,6 +29,7 @@ export default function App() {
             <Route path="forgot" element={<Forgot />} />
             <Route path="reset-password" element={<ResetPassword />} />
             <Route path="onboarding" element={<Onboarding />} />
+            <Route path="microsoft/callback" element={<MicrosoftCallback />} />
             <Route path="terms" element={<Terms />} />
             <Route path="privacy" element={<Privacy />} />
             <Route element={<RequireWorkspace />}>
