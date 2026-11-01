@@ -1,5 +1,6 @@
 import type { Campaign, Signature } from '../types'
 import { supabase } from './supabase'
+import { resolveCampaign } from './render'
 
 // Signature links become /r/<code>. Codes are deterministic (org + person + url), so
 // re-copying a signature reuses the same links and click history stays continuous.
@@ -36,7 +37,7 @@ export function linkKind(url: string, sig: Signature, campaigns: Campaign[] = []
   const n = norm(url)
   if (sig.fields.website && n === norm(sig.fields.website.startsWith('http') ? sig.fields.website : `https://${sig.fields.website}`)) return 'Website'
   if (sig.extras.cta?.url && n === norm(sig.extras.cta.url.startsWith('http') ? sig.extras.cta.url : `https://${sig.extras.cta.url}`)) return `Button: ${sig.extras.cta.label}`
-  const banner = campaigns.find((c) => c.id === sig.extras.campaignId)
+  const banner = resolveCampaign(sig, campaigns)
   if (banner?.url && n === norm(banner.url.startsWith('http') ? banner.url : `https://${banner.url}`)) return `Banner: ${banner.name}`
   const nav = sig.extras.navLinks.find((l) => l.url && n === norm(l.url.startsWith('http') ? l.url : `https://${l.url}`))
   if (nav) return `Nav: ${nav.label}`

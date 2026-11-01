@@ -7,7 +7,7 @@ import {
 import clsx from 'clsx'
 import { useStore } from '../store'
 import type { NavLink, Signature, SocialKey } from '../types'
-import { FONTS, SOCIAL_LABEL, renderSignature } from '../lib/render'
+import { FONTS, NO_BANNER, SOCIAL_LABEL, isLive, renderSignature, resolveCampaign } from '../lib/render'
 import { TEMPLATES, templateById } from '../lib/templates'
 import { brandColors, copyRich, copyText, download, slug } from '../lib/io'
 import EmailPreview from '../components/EmailPreview'
@@ -279,7 +279,7 @@ function TemplatePanel({ sig, onPick, campaigns }: { sig: Signature; onPick: (id
     <Section title="Layout" desc="Switch templates anytime — your details carry over.">
       <div className="grid grid-cols-2 gap-3">
         {TEMPLATES.map((t) => {
-          const preview = renderSignature({ ...sig, templateId: t.id, design: { ...sig.design, ...t.design }, extras: { ...sig.extras, campaignId: null, disclaimer: '' } }, { campaigns, still: true })
+          const preview = renderSignature({ ...sig, templateId: t.id, design: { ...sig.design, ...t.design }, extras: { ...sig.extras, campaignId: NO_BANNER, disclaimer: '' } }, { campaigns, still: true })
           const on = sig.templateId === t.id
           return (
             <button key={t.id} onClick={() => onPick(t.id)} className={clsx('group relative overflow-hidden rounded-xl border bg-white p-2 text-left transition', on ? 'border-ink ring-2 ring-ink' : 'border-line hover:border-line-2 hover:shadow-lift')}>
@@ -388,13 +388,29 @@ function ExtrasPanel({ sig, setX, campaigns }: { sig: Signature; setX: <K extend
 
       <Divider label="Campaign banner" />
       <div className="grid gap-2">
-        <button onClick={() => setX('campaignId', null)} className={clsx('rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition', !sig.extras.campaignId ? 'border-ink bg-paper' : 'border-line hover:border-line-2')}>No banner</button>
-        {campaigns.map((c) => (
-          <button key={c.id} onClick={() => setX('campaignId', c.id)} className={clsx('flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition', sig.extras.campaignId === c.id ? 'border-ink bg-paper' : 'border-line hover:border-line-2')}>
-            <span className="h-7 w-10 shrink-0 rounded-md" style={{ background: c.style === 'dark' ? '#0f172a' : `linear-gradient(120deg,${c.from},${c.to})` }} />
-            <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{c.name}</span><span className="block text-xs text-muted">{c.active ? 'Live' : 'Paused — hidden until active'}</span></span>
-          </button>
-        ))}
+        {(() => {
+          const shown = resolveCampaign(sig, campaigns)
+          const auto = resolveCampaign({ ...sig, extras: { ...sig.extras, campaignId: null } }, campaigns)
+          return (
+            <>
+              <button onClick={() => setX('campaignId', null)} className={clsx('rounded-xl border px-3 py-2.5 text-left transition', !sig.extras.campaignId ? 'border-ink bg-paper' : 'border-line hover:border-line-2')}>
+                <span className="block text-sm font-semibold">Automatic</span>
+                <span className="block text-xs text-muted">{auto ? `Showing “${auto.name}” — the live campaign` : 'Shows whichever campaign is live — none right now'}</span>
+              </button>
+              <button onClick={() => setX('campaignId', NO_BANNER)} className={clsx('rounded-xl border px-3 py-2.5 text-left text-sm font-medium transition', sig.extras.campaignId === NO_BANNER ? 'border-ink bg-paper' : 'border-line hover:border-line-2')}>No banner</button>
+              {campaigns.map((c) => {
+                const live = isLive(c)
+                return (
+                  <button key={c.id} onClick={() => setX('campaignId', c.id)} className={clsx('flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition', sig.extras.campaignId === c.id ? 'border-ink bg-paper' : 'border-line hover:border-line-2')}>
+                    <span className="h-7 w-10 shrink-0 rounded-md" style={{ background: c.style === 'dark' ? '#0f172a' : `linear-gradient(120deg,${c.from},${c.to})` }} />
+                    <span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{c.name}</span><span className="block text-xs text-muted">{live ? 'Live now' : !c.active ? 'Paused' : 'Outside its schedule'}{sig.extras.campaignId === c.id && !live ? ' — falls back to Automatic' : ''}</span></span>
+                    {shown?.id === c.id && <span className="tag bg-pine-soft text-pine">In signature</span>}
+                  </button>
+                )
+              })}
+            </>
+          )
+        })()}
         <Link to="/campaigns" className="mt-1 inline-flex items-center gap-1.5 text-xs font-semibold text-clay-ink hover:underline"><Megaphone size={12} /> Manage campaigns</Link>
       </div>
 

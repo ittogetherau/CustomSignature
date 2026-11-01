@@ -747,9 +747,33 @@ export const ANIMATION_CSS = `
 @keyframes scShine{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 `
 
+/** campaignId meaning: null = automatic (whatever is live), NO_BANNER = opt out, otherwise a pinned campaign. */
+export const NO_BANNER = 'none'
+
+const todayISO = () => new Date().toISOString().slice(0, 10)
+
+/** Live = switched on and today falls inside its start/end dates. */
+export const isLive = (c: Campaign, today = todayISO()) => c.active && (!c.start || c.start <= today) && (!c.end || c.end >= today)
+
+/**
+ * The banner a signature should carry right now. A pinned campaign wins while it is live;
+ * otherwise the newest live campaign aimed at everyone or at this person's department.
+ */
+export function resolveCampaign(s: Signature, campaigns: Campaign[] = []): Campaign | null {
+  const choice = s.extras.campaignId
+  if (choice === NO_BANNER) return null
+  const today = todayISO()
+  if (choice) {
+    const pinned = campaigns.find((c) => c.id === choice)
+    if (pinned && isLive(pinned, today)) return pinned
+  }
+  const dept = s.fields.department.trim().toLowerCase()
+  return campaigns.find((c) => isLive(c, today) && (c.departments.length === 0 || c.departments.some((d) => d.trim().toLowerCase() === dept))) ?? null
+}
+
 export function renderSignature(s: Signature, ctx: RenderContext = {}) {
   const fn = T[s.templateId] ?? T.aurora
-  const campaign = s.extras.campaignId ? ctx.campaigns?.find((x) => x.id === s.extras.campaignId && x.active) ?? null : null
+  const campaign = resolveCampaign(s, ctx.campaigns)
   const base = { sm: 12, md: 13, lg: 14 }[s.design.size]
   const anim = s.extras.animations && !ctx.still
   const body = fn({ s, campaign, anim, base, font: s.design.font })

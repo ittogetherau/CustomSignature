@@ -72,8 +72,8 @@ export default function Team() {
   const list = employees.filter((e) => (dept === 'All' || e.department === dept) && `${e.fullName} ${e.email} ${e.title}`.toLowerCase().includes(q.toLowerCase()))
   const allOn = list.length > 0 && list.every((e) => sel.includes(e.id))
 
-  const campaignFor = (e: Employee) => campaigns.find((c) => c.active && (c.departments.length === 0 || c.departments.includes(e.department)))?.id ?? null
-  const sigFor = (e: Employee) => employeeSignature(e, brand, campaignFor(e))
+  // Team signatures use Automatic banners: the renderer picks the live campaign for each person's department.
+  const sigFor = (e: Employee) => employeeSignature(e, brand, null)
 
   const assign = (templateId: string) => {
     sel.forEach((id) => store.updateEmployee(id, { templateId, status: 'active' }))
