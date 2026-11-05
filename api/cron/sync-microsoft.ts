@@ -2,7 +2,7 @@ import { ConsentRequired, admin, env, json, syncOrg } from '../_lib/microsoft.js
 
 export const maxDuration = 60
 
-/** Daily job (vercel.json → crons): re-sync every workspace linked to a Microsoft tenant. */
+/** Daily job (vercel.json → crons): re-sync every workspace linked to a Microsoft tenant, prune old relay events. */
 export async function GET(req: Request) {
   try {
     return await handle(req)
@@ -15,6 +15,12 @@ async function handle(req: Request) {
   if (req.headers.get('authorization') !== `Bearer ${env('CRON_SECRET')}`) return json({ error: 'Unauthorized' }, 401)
 
   const db = admin()
+
+  // Relay activity is kept for 30 days. A failure here must not stop the directory sync.
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
+  const pruned = await db.from('relay_events').delete().lt('created_at', cutoff)
+  const relayEventsPruned = pruned.error ? `error: ${pruned.error.message}` : 'ok'
+
   // Least recently synced first, so a run that hits the time limit picks up where the last one stopped.
   const { data: orgs, error } = await db
     .from('organizations')
@@ -35,5 +41,5 @@ async function handle(req: Request) {
       results[org.id] = { error: status }
     }
   }
-  return json({ synced: Object.keys(results).length, results })
+  return json({ synced: Object.keys(results).length, results, relayEventsPruned })
 }

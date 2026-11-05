@@ -1,5 +1,5 @@
 import type { Campaign, Signature, SocialKey } from '../types'
-import { CLASSIC, type Block, type ClassicRecipe } from './classic'
+import { CLASSIC, type Block, type ClassicRecipe } from './classic.js'
 
 // Email clients ignore <head> styles and most modern CSS, so every template is
 // built from nested tables with inline styles. Animation classes are progressive

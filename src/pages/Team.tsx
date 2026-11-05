@@ -4,8 +4,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Check, Copy, Download, FileSpreadsheet, Plus, Search, Trash2, Upload, UserPlus, Wand2, Eye, Send, BarChart3 } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
-import type { Employee, Signature } from '../types'
-import { TEMPLATES, templateById, uid, DEFAULT_EXTRAS } from '../lib/templates'
+import type { Employee } from '../types'
+import { TEMPLATES, templateById, uid } from '../lib/templates'
+import { employeeSignature } from '../lib/teamSignature'
 import { renderSignature } from '../lib/render'
 import { copyRich, download, parseCsv, timeAgo } from '../lib/io'
 import { Avatar, Field, Modal, PageHeader, SigThumb, useToast } from '../components/ui'
@@ -22,19 +23,6 @@ const STATUS: Record<Employee['status'], { label: string; cls: string }> = {
 const CSV_TEMPLATE = `name,title,department,email,phone,photo
 Jane Smith,Marketing Manager,Marketing,jane@yourcompany.com,+61 400 000 000,
 `
-
-/** Turn a person + the brand kit into a full signature. */
-export function employeeSignature(e: Employee, brand: ReturnType<typeof useStore>['brand'], campaignId: string | null): Signature {
-  const meta = templateById(e.templateId ?? brand.defaultTemplateId)
-  return {
-    id: e.id, label: e.fullName, templateId: meta.id,
-    fields: { fullName: e.fullName, title: e.title, department: e.department, company: brand.company, pronouns: '', phone: e.phone || brand.phone, mobile: '', email: e.email, website: brand.website, address: '', photo: e.photo, logo: brand.logo, logoLight: brand.logoLight ?? '' },
-    socials: brand.socials,
-    design: { primary: brand.primary, accent: brand.accent, text: meta.design.text ?? '#0f172a', font: brand.font, photoShape: meta.design.photoShape ?? 'circle', size: 'md', iconStyle: meta.design.iconStyle ?? 'filled' },
-    extras: { ...DEFAULT_EXTRAS, animations: meta.animated, verified: false, disclaimer: brand.disclaimer, campaignId },
-    createdAt: e.updatedAt, updatedAt: e.updatedAt,
-  }
-}
 
 export default function Team() {
   const store = useStore()
