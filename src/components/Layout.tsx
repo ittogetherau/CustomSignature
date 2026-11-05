@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, ChevronUp, LayoutGrid, LogOut, Megaphone, Menu, Palette, PenLine, Plus, Settings, Users, X, Home } from 'lucide-react'
+import { BarChart3, ChevronUp, LayoutGrid, LogOut, Megaphone, Menu, Palette, PenLine, Plus, Settings, Users, X, Home, Send } from 'lucide-react'
 import clsx from 'clsx'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
@@ -13,6 +13,7 @@ const NAV = [
   { to: '/campaigns', label: 'Banners & campaigns', icon: Megaphone },
   { to: '/insights', label: 'Insights', icon: BarChart3 },
   { to: '/brand', label: 'Brand kit', icon: Palette },
+  { to: '/mail-routing', label: 'Every device', icon: Send },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 

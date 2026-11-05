@@ -15,6 +15,7 @@ import Brand from './pages/Brand'
 import { Forgot, Login, MicrosoftCallback, Onboarding, ResetPassword, Signup } from './pages/Auth'
 import Setup from './pages/Setup'
 import Settings from './pages/Settings'
+import MailRouting, { ExchangeCallback } from './pages/MailRouting'
 import { Privacy, Terms } from './pages/Legal'
 import { MarketingLayout } from './marketing/kit'
 import { Blog, BlogPost, Contact, Features, Microsoft365, Pricing, Security, Showcase } from './marketing/Pages'
@@ -55,6 +56,8 @@ export default function App() {
                 <Route path="insights" element={<Analytics />} />
                 <Route path="brand" element={<Brand />} />
                 <Route path="settings" element={<Settings />} />
+                <Route path="mail-routing" element={<MailRouting />} />
+                <Route path="exchange/callback" element={<ExchangeCallback />} />
                 <Route path="*" element={<Dashboard />} />
               </Route>
             </Route>
