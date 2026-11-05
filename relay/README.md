@@ -39,10 +39,8 @@ header. Messages that are `multipart/signed`, `multipart/encrypted` or
 | --- | --- | --- | --- |
 | `INKWELL_API` | yes | | e.g. `https://inkwell.ittogether.com.au` |
 | `RELAY_SECRET` | yes | | Shared HMAC secret. Also protects `/admin/cert` |
-| `SUPABASE_URL` | yes | | |
-| `SUPABASE_SERVICE_ROLE_KEY` | yes | | Reads and writes the private `relay-certs` bucket |
-| `VERCEL_TOKEN` | for ACME | | Enables `/admin/cert` and renewal. If unset, those return 503 or are off |
-| `VERCEL_TEAM_ID` | for ACME | | |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | no | | Optional direct access to the `relay-certs` bucket. By default certs go through `POST /api/relay/certs` on the Inkwell API |
+| `VERCEL_TOKEN` / `VERCEL_TEAM_ID` | no | | Optional direct Vercel DNS for ACME. By default `_acme-challenge` records go through the Inkwell API |
 | `DNS_DOMAIN` | | `ittogether.com.au` | Vercel DNS zone that holds `_acme-challenge` records |
 | `ACME_EMAIL` | | `admin@ittogether.com.au` | Let's Encrypt account contact |
 | `ACME_DIRECTORY_URL` | | LE production | Set to LE staging while testing |

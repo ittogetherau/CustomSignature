@@ -46,6 +46,10 @@ export async function ensureRecord(name: string, type: 'TXT' | 'A' | 'CNAME', va
   return r.uid
 }
 
+export async function deleteRecordValue(name: string, type: string, value: string) {
+  for (const r of await listRecords(name, type)) if (r.value === value) await call(`/v2/domains/${DNS_DOMAIN()}/records/${r.id}`, { method: 'DELETE' })
+}
+
 export async function deleteRecords(name: string, type?: string) {
   for (const r of await listRecords(name, type)) await call(`/v2/domains/${DNS_DOMAIN()}/records/${r.id}`, { method: 'DELETE' })
 }
