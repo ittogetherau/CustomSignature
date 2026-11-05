@@ -3,20 +3,29 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { env, json } from './microsoft.js'
 
 // Shared by /api/relay/* — calls from the Inkwell SMTP relay, never from browsers.
-// Every request carries X-Inkwell-Signature = hex HMAC-SHA256(raw body, RELAY_SECRET)
-// (a "sha256=" prefix is accepted too).
+// Every request carries (same contract as relay/src/hmac.ts):
+//   X-Inkwell-Timestamp: <unix seconds>   (rejected if more than 300 s from our clock)
+//   X-Inkwell-Signature: sha256=<hex HMAC-SHA256(RELAY_SECRET, "<timestamp>.<raw body>")>
 
-export function verify(body: string, header: string | null) {
-  const given = (header ?? '').trim().replace(/^sha256=/i, '').toLowerCase()
-  if (!/^[0-9a-f]{64}$/.test(given)) return false
-  const expected = createHmac('sha256', env('RELAY_SECRET')).update(body, 'utf8').digest()
+export function verify(body: string, signature: string | null, timestamp: string | null, now = Date.now()) {
+  const given = (signature ?? '').trim().replace(/^sha256=/i, '').toLowerCase()
+  if (!/^[0-9a-f]{64}$/.test(given) || !/^\d+$/.test(timestamp ?? '')) return false
+  if (Math.abs(now / 1000 - Number(timestamp)) > 300) return false
+  const expected = createHmac('sha256', env('RELAY_SECRET')).update(`${timestamp}.${body}`, 'utf8').digest()
   return timingSafeEqual(expected, Buffer.from(given, 'hex'))
+}
+
+/** Hex signature + timestamp headers for calls from Inkwell to the relay's admin endpoint. */
+export function signHeaders(body: string, now = Date.now()): Record<string, string> {
+  const ts = Math.floor(now / 1000).toString()
+  const mac = createHmac('sha256', env('RELAY_SECRET')).update(`${ts}.${body}`, 'utf8').digest('hex')
+  return { 'X-Inkwell-Timestamp': ts, 'X-Inkwell-Signature': `sha256=${mac}` }
 }
 
 /** Read and authenticate a relay request. Returns the parsed body or an error response. */
 export async function relayRequest<T>(req: Request): Promise<{ body: T } | { error: Response }> {
   const raw = await req.text()
-  if (!verify(raw, req.headers.get('x-inkwell-signature'))) return { error: json({ error: 'Bad signature' }, 401) }
+  if (!verify(raw, req.headers.get('x-inkwell-signature'), req.headers.get('x-inkwell-timestamp'))) return { error: json({ error: 'Bad signature' }, 401) }
   try {
     return { body: JSON.parse(raw) as T }
   } catch {

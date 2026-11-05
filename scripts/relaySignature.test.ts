@@ -2,7 +2,6 @@
 // (minus the database) and checks the output. Run: npm test
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { createHmac } from 'node:crypto'
 import { buildRelaySignature, relaySkipReason, RELAY_TRACKING_BASE } from '../src/lib/relaySignature'
 import { linkCode } from '../src/lib/trackingCore'
 import type { BrandKit, Campaign, Employee } from '../src/types'
@@ -65,14 +64,22 @@ test('scope decides who gets a signature', () => {
   assert.equal(relaySkipReason({ mode: 'all' }, employee, sender), null)
 })
 
-test('relay requests are authenticated with HMAC-SHA256', async () => {
+test('API accepts exactly what the relay signs (shared HMAC contract)', async () => {
   process.env.RELAY_SECRET = 'test-secret'
-  const { verify } = await import('../api/_lib/relay')
-  const body = JSON.stringify({ tenantHost: 'contoso.mail.protection.outlook.com', sender: 'ada@example.com' })
-  const sig = createHmac('sha256', 'test-secret').update(body).digest('hex')
-  assert.equal(verify(body, sig), true)
-  assert.equal(verify(body, `sha256=${sig.toUpperCase()}`), true)
-  assert.equal(verify(body + ' ', sig), false)
-  assert.equal(verify(body, null), false)
-  assert.equal(verify(body, 'abc'), false)
+  const { verify, signHeaders } = await import('../api/_lib/relay')
+  const { sign } = await import('../relay/src/hmac')
+  const body = JSON.stringify({ tenantHost: 'abc123.relay.ittogether.com.au', sender: 'ada@example.com' })
+  const h = sign('test-secret', body)
+  assert.equal(verify(body, h['X-Inkwell-Signature'], h['X-Inkwell-Timestamp']), true)
+  assert.equal(verify(body + ' ', h['X-Inkwell-Signature'], h['X-Inkwell-Timestamp']), false)
+  assert.equal(verify(body, h['X-Inkwell-Signature'], String(Number(h['X-Inkwell-Timestamp']) + 1)), false)
+  assert.equal(verify(body, null, h['X-Inkwell-Timestamp']), false)
+  assert.equal(verify(body, 'abc', h['X-Inkwell-Timestamp']), false)
+  // Replays older than 5 minutes are refused.
+  const old = sign('test-secret', body, Date.now() - 301_000)
+  assert.equal(verify(body, old['X-Inkwell-Signature'], old['X-Inkwell-Timestamp']), false)
+  // And the relay accepts what the API signs for /admin/cert.
+  const { verify: relayVerify } = await import('../relay/src/hmac')
+  const mine = signHeaders(body)
+  assert.equal(relayVerify('test-secret', body, mine['X-Inkwell-Signature'], mine['X-Inkwell-Timestamp']), true)
 })
