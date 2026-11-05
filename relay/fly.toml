@@ -1,0 +1,63 @@
+# Inkwell SMTP signature relay. See README.md before deploying.
+app = "inkwell-relay"
+primary_region = "syd"
+kill_signal = "SIGTERM"
+kill_timeout = "30s"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  SMTP_PORT = "25"
+  HTTP_PORT = "8080"
+  INKWELL_API = "https://inkwell.ittogether.com.au"
+  RELAY_DOMAIN = "relay.ittogether.com.au"
+  RELAY_DEFAULT_HOST = "relay.ittogether.com.au"
+  REQUIRE_OUTLOOK_RDNS = "true"
+  # Fly's TCP proxy hides the client IP; PROXY protocol v1 restores it for the rDNS check.
+  USE_PROXY_PROTOCOL = "true"
+  SPOOL_DIR = "/tmp/inkwell-relay"
+  DNS_DOMAIN = "ittogether.com.au"
+  ACME_EMAIL = "admin@ittogether.com.au"
+
+# SMTP from Exchange Online. Raw TCP: TLS (STARTTLS) is terminated by the app.
+[[services]]
+  protocol = "tcp"
+  internal_port = 25
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 2
+
+  [[services.ports]]
+    port = 25
+    handlers = ["proxy_proto"]
+    proxy_proto_options = { version = "v1" }
+
+  [services.concurrency]
+    type = "connections"
+    soft_limit = 200
+    hard_limit = 400
+
+  [[services.tcp_checks]]
+    interval = "15s"
+    timeout = "2s"
+    grace_period = "10s"
+
+# Health + HMAC-protected admin (POST /admin/cert).
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "off"
+  auto_start_machines = true
+  min_machines_running = 2
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "15s"
+    method = "GET"
+    path = "/health"
+    timeout = "2s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

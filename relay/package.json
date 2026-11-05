@@ -1,0 +1,36 @@
+{
+  "name": "inkwell-relay",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Inkwell server-side email signature SMTP relay for Microsoft 365",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@zone-eu/mailsplit": "^5.4.30",
+    "acme-client": "^5.4.0",
+    "iconv-lite": "^0.7.3",
+    "libbase64": "^1.4.1",
+    "libmime": "^5.6.4",
+    "libqp": "^3.0.1",
+    "nodemailer": "^10.3.1",
+    "smtp-server": "^3.21.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "@types/nodemailer": "^8.0.2",
+    "@types/smtp-server": "^3.5.13",
+    "selfsigned": "^5.5.0",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
