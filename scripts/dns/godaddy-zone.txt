@@ -1,0 +1,52 @@
+ittogether.com.au.	600	IN	A	204.69.207.1
+aeca.ittogether.com.au.	600	IN	A	195.35.10.190
+api.dev.attendance.ittogether.com.au. 600 IN A	62.72.56.2
+api.studentlead.ittogether.com.au. 600 IN A	202.79.51.253
+assets.ittogether.com.au. 600	IN	A	31.97.107.160
+backend.ittogether.com.au. 600	IN	A	31.97.107.160
+book.ittogether.com.au.	3600	IN	A	15.197.225.128
+book.ittogether.com.au.	3600	IN	A	3.33.251.168
+brandkit.ittogether.com.au. 600	IN	A	195.35.10.190
+dev.attendance.ittogether.com.au. 600 IN A	62.72.56.2
+hello.ittogether.com.au. 600	IN	A	195.35.10.190
+iie.ittogether.com.au.	600	IN	A	93.127.198.27
+n8n.ittogether.com.au.	3600	IN	A	31.97.223.199
+passwords.ittogether.com.au. 600 IN	A	31.97.107.160
+qinstitute.ittogether.com.au. 600 IN	A	51.161.173.157
+staff.ittogether.com.au. 3600	IN	A	3.33.251.168
+staff.ittogether.com.au. 3600	IN	A	15.197.225.128
+status.ittogether.com.au. 600	IN	A	93.127.198.27
+studentlead.ittogether.com.au. 600 IN	A	202.79.51.253
+tyif.ittogether.com.au.	600	IN	A	93.127.198.27
+whm.ittogether.com.au.	600	IN	A	195.35.10.190
+aold26l.ittogether.com.au. 3600	IN	CNAME	bookings.cs.zohohost.com.au.
+autodiscover.ittogether.com.au.	3600 IN	CNAME	autodiscover.outlook.com.
+enterpriseenrollment.ittogether.com.au.	3600 IN	CNAME enterpriseenrollment-s.manage.microsoft.com.
+enterpriseregistration.ittogether.com.au. 3600 IN CNAME	enterpriseregistration.windows.net.
+inkwell.ittogether.com.au. 3600	IN	CNAME	ba383d994b4f1876.vercel-dns-017.com.
+manage.ittogether.com.au. 3600	IN	CNAME	cippwjtvj.azurewebsites.net.
+microsoft.ittogether.com.au. 3600 IN	CNAME	ashy-sea-0a698c610.7.azurestaticapps.net.
+myit.ittogether.com.au.	3600	IN	CNAME	desk.cs.zohohost.com.au.
+selector1._domainkey.ittogether.com.au.	3600 IN	CNAME selector1-ittogether-com-au._domainkey.mistriglobal.onmicrosoft.com.
+selector2._domainkey.ittogether.com.au.	3600 IN	CNAME selector2-ittogether-com-au._domainkey.mistriglobal.onmicrosoft.com.
+track.ittogether.com.au. 3600	IN	CNAME	tender-serval.aplosites.com.
+w0fi7s3.ittogether.com.au. 3600	IN	CNAME	bookings.cs.zohohost.com.au.
+www.ittogether.com.au.	3600	IN	CNAME	sites.figma.net.
+zb28992904.ittogether.com.au. 3600 IN	CNAME	zmverify.zoho.com.au.
+zda81d06ecc1602f56acd3f436a761075f.ittogether.com.au. 3600 IN CNAME desk.cs.zohohost.com.au.
+_domainconnect.ittogether.com.au. 3600 IN CNAME	_domainconnect.gd.domaincontrol.com.
+ittogether.com.au.	3600	IN	MX	0 ittogether-com-au.mail.protection.outlook.com.
+ittogether.com.au.	600	IN	TXT	"zoho-verification=zb26493577.zmverify.zoho.com.au"
+ittogether.com.au.	600	IN	TXT	"zoho-verification=zb28992904.zmverify.zoho.com.au"
+ittogether.com.au.	600	IN	TXT	"v=spf1 include:spf.protection.outlook.com -all"
+1563969054383._domainkey.ittogether.com.au. 600	IN TXT "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCoPYCifc+B6m88s6VbX95yLk8ub8XSIXawcmk5Kc+XWgoM5DPCXT8QhcTL/93/4TuV/pze/LIOovp2j52WJrtdZMtNnfEmtNipXTEJXDv0Ukq433A+GITgsLeSjRwsOkxLmU4yNvj4zIahnBQXMKDuJfYmCXMFY5M2Ft61mU0htwIDAQAB"
+161522._domainkey.ittogether.com.au. 3600 IN TXT "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC2SBOeWy69sdzU82euxSgVJfaiZZEXfbKTyPNhUgNpPbk1JWk9IaXuNAYL+YwsyaovN9G+k+DBnyWN6XD4olQkCSOfwaPHTg9p2h4q4V/P8NuR3XggT4nXYA77OyOhiIrXGS91UxwydfSdC+J4G5GbDTDHqx2f9QfWSfHiYoiBbQIDAQAB"
+asuid.manage.ittogether.com.au.	3600 IN	TXT	"BEFB5BA1490168FFFFA71438DB3D0E03D2151E70B4AB3B21DADAD54BD7113ADA"
+dc-8e814c8572._spfm.ittogether.com.au. 3600 IN TXT "v=spf1 include:spf.protection.outlook.com include:one.zoho.com.au ~all"
+zc7005170724._domainkey.ittogether.com.au. 600 IN TXT "k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArT8qqFtIGNjLpz9/arqyhUGFtg+yuX8wVmd9vexNktKDU+6t8+F6GT5924s2MfPAfaHBTMOLnp1Oz7NBtUAwlS9BqQ+kNxUhFTC75DT1TZwzhLH2kFe9XY+aqOOR+vt4QbfaXLw66inzSfbrh9a1I6OJecgq1UfAt9ri4TYJ/q6/cHirxd3Kv67tHjk3t+sIheMZwb8Z/7" "e5HyxXYHY/VrP1P76SEps+2BIST6GqGmsMo6z3r27lTIqcGvl305WtS7kG0rYrWxlLCIlEpilpb+L+CiFiDxLsPfHCXX1IxN/2D6XDEZGl9qHi8B2jxPul61Dk/kz45BNyAMRfRBDBqwIDAQAB"
+_dmarc.ittogether.com.au. 3600	IN	TXT	"v=DMARC1;p=none;sp=none;pct=100;rua=mailto:mina.azar@ittogether.com.au;ruf=mailto:mina.azar@ittogether.com.au;ri=86400;aspf=s;adkim=s;fo=1"
+_figma_sites_verify.ittogether.com.au. 3600 IN TXT "v=088829c9-d92d-4b7a-8e5f-e6d58f62c729"
+backend.ittogether.com.au. 600	IN	AAAA	2a02:4780:59:1bc3::1
+staff.ittogether.com.au. 600	IN	AAAA	2a02:4780:59:1bc3::1
+www.backend.ittogether.com.au. 600 IN	AAAA	2a02:4780:59:1bc3::1
+www.staff.ittogether.com.au. 600 IN	AAAA	2a02:4780:59:1bc3::1

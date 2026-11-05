@@ -1,0 +1,315 @@
+[
+{
+"type": "A",
+"name": "",
+"ttl": 600,
+"value": "204.69.207.1"
+},
+{
+"type": "A",
+"name": "aeca",
+"ttl": 600,
+"value": "195.35.10.190"
+},
+{
+"type": "A",
+"name": "api.dev.attendance",
+"ttl": 600,
+"value": "62.72.56.2"
+},
+{
+"type": "A",
+"name": "api.studentlead",
+"ttl": 600,
+"value": "202.79.51.253"
+},
+{
+"type": "A",
+"name": "assets",
+"ttl": 600,
+"value": "31.97.107.160"
+},
+{
+"type": "A",
+"name": "backend",
+"ttl": 600,
+"value": "31.97.107.160"
+},
+{
+"type": "A",
+"name": "book",
+"ttl": 3600,
+"value": "15.197.225.128"
+},
+{
+"type": "A",
+"name": "book",
+"ttl": 3600,
+"value": "3.33.251.168"
+},
+{
+"type": "A",
+"name": "brandkit",
+"ttl": 600,
+"value": "195.35.10.190"
+},
+{
+"type": "A",
+"name": "dev.attendance",
+"ttl": 600,
+"value": "62.72.56.2"
+},
+{
+"type": "A",
+"name": "hello",
+"ttl": 600,
+"value": "195.35.10.190"
+},
+{
+"type": "A",
+"name": "iie",
+"ttl": 600,
+"value": "93.127.198.27"
+},
+{
+"type": "A",
+"name": "n8n",
+"ttl": 3600,
+"value": "31.97.223.199"
+},
+{
+"type": "A",
+"name": "passwords",
+"ttl": 600,
+"value": "31.97.107.160"
+},
+{
+"type": "A",
+"name": "qinstitute",
+"ttl": 600,
+"value": "51.161.173.157"
+},
+{
+"type": "A",
+"name": "staff",
+"ttl": 3600,
+"value": "3.33.251.168"
+},
+{
+"type": "A",
+"name": "staff",
+"ttl": 3600,
+"value": "15.197.225.128"
+},
+{
+"type": "A",
+"name": "status",
+"ttl": 600,
+"value": "93.127.198.27"
+},
+{
+"type": "A",
+"name": "studentlead",
+"ttl": 600,
+"value": "202.79.51.253"
+},
+{
+"type": "A",
+"name": "tyif",
+"ttl": 600,
+"value": "93.127.198.27"
+},
+{
+"type": "A",
+"name": "whm",
+"ttl": 600,
+"value": "195.35.10.190"
+},
+{
+"type": "CNAME",
+"name": "aold26l",
+"ttl": 3600,
+"value": "bookings.cs.zohohost.com.au"
+},
+{
+"type": "CNAME",
+"name": "autodiscover",
+"ttl": 3600,
+"value": "autodiscover.outlook.com"
+},
+{
+"type": "CNAME",
+"name": "enterpriseenrollment",
+"ttl": 3600,
+"value": "enterpriseenrollment-s.manage.microsoft.com"
+},
+{
+"type": "CNAME",
+"name": "enterpriseregistration",
+"ttl": 3600,
+"value": "enterpriseregistration.windows.net"
+},
+{
+"type": "CNAME",
+"name": "inkwell",
+"ttl": 3600,
+"value": "ba383d994b4f1876.vercel-dns-017.com"
+},
+{
+"type": "CNAME",
+"name": "manage",
+"ttl": 3600,
+"value": "cippwjtvj.azurewebsites.net"
+},
+{
+"type": "CNAME",
+"name": "microsoft",
+"ttl": 3600,
+"value": "ashy-sea-0a698c610.7.azurestaticapps.net"
+},
+{
+"type": "CNAME",
+"name": "myit",
+"ttl": 3600,
+"value": "desk.cs.zohohost.com.au"
+},
+{
+"type": "CNAME",
+"name": "selector1._domainkey",
+"ttl": 3600,
+"value": "selector1-ittogether-com-au._domainkey.mistriglobal.onmicrosoft.com"
+},
+{
+"type": "CNAME",
+"name": "selector2._domainkey",
+"ttl": 3600,
+"value": "selector2-ittogether-com-au._domainkey.mistriglobal.onmicrosoft.com"
+},
+{
+"type": "CNAME",
+"name": "track",
+"ttl": 3600,
+"value": "tender-serval.aplosites.com"
+},
+{
+"type": "CNAME",
+"name": "w0fi7s3",
+"ttl": 3600,
+"value": "bookings.cs.zohohost.com.au"
+},
+{
+"type": "CNAME",
+"name": "www",
+"ttl": 3600,
+"value": "sites.figma.net"
+},
+{
+"type": "CNAME",
+"name": "zb28992904",
+"ttl": 3600,
+"value": "zmverify.zoho.com.au"
+},
+{
+"type": "CNAME",
+"name": "zda81d06ecc1602f56acd3f436a761075f",
+"ttl": 3600,
+"value": "desk.cs.zohohost.com.au"
+},
+{
+"type": "CNAME",
+"name": "_domainconnect",
+"ttl": 3600,
+"value": "_domainconnect.gd.domaincontrol.com"
+},
+{
+"type": "MX",
+"name": "",
+"ttl": 3600,
+"mxPriority": 0,
+"value": "ittogether-com-au.mail.protection.outlook.com"
+},
+{
+"type": "TXT",
+"name": "",
+"ttl": 600,
+"value": "zoho-verification=zb26493577.zmverify.zoho.com.au"
+},
+{
+"type": "TXT",
+"name": "",
+"ttl": 600,
+"value": "zoho-verification=zb28992904.zmverify.zoho.com.au"
+},
+{
+"type": "TXT",
+"name": "",
+"ttl": 600,
+"value": "v=spf1 include:spf.protection.outlook.com -all"
+},
+{
+"type": "TXT",
+"name": "1563969054383._domainkey",
+"ttl": 600,
+"value": "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCoPYCifc+B6m88s6VbX95yLk8ub8XSIXawcmk5Kc+XWgoM5DPCXT8QhcTL/93/4TuV/pze/LIOovp2j52WJrtdZMtNnfEmtNipXTEJXDv0Ukq433A+GITgsLeSjRwsOkxLmU4yNvj4zIahnBQXMKDuJfYmCXMFY5M2Ft61mU0htwIDAQAB"
+},
+{
+"type": "TXT",
+"name": "161522._domainkey",
+"ttl": 3600,
+"value": "k=rsa; p=MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC2SBOeWy69sdzU82euxSgVJfaiZZEXfbKTyPNhUgNpPbk1JWk9IaXuNAYL+YwsyaovN9G+k+DBnyWN6XD4olQkCSOfwaPHTg9p2h4q4V/P8NuR3XggT4nXYA77OyOhiIrXGS91UxwydfSdC+J4G5GbDTDHqx2f9QfWSfHiYoiBbQIDAQAB"
+},
+{
+"type": "TXT",
+"name": "asuid.manage",
+"ttl": 3600,
+"value": "BEFB5BA1490168FFFFA71438DB3D0E03D2151E70B4AB3B21DADAD54BD7113ADA"
+},
+{
+"type": "TXT",
+"name": "dc-8e814c8572._spfm",
+"ttl": 3600,
+"value": "v=spf1 include:spf.protection.outlook.com include:one.zoho.com.au ~all"
+},
+{
+"type": "TXT",
+"name": "zc7005170724._domainkey",
+"ttl": 600,
+"value": "k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArT8qqFtIGNjLpz9/arqyhUGFtg+yuX8wVmd9vexNktKDU+6t8+F6GT5924s2MfPAfaHBTMOLnp1Oz7NBtUAwlS9BqQ+kNxUhFTC75DT1TZwzhLH2kFe9XY+aqOOR+vt4QbfaXLw66inzSfbrh9a1I6OJecgq1UfAt9ri4TYJ/q6/cHirxd3Kv67tHjk3t+sIheMZwb8Z/7e5HyxXYHY/VrP1P76SEps+2BIST6GqGmsMo6z3r27lTIqcGvl305WtS7kG0rYrWxlLCIlEpilpb+L+CiFiDxLsPfHCXX1IxN/2D6XDEZGl9qHi8B2jxPul61Dk/kz45BNyAMRfRBDBqwIDAQAB"
+},
+{
+"type": "TXT",
+"name": "_dmarc",
+"ttl": 3600,
+"value": "v=DMARC1;p=none;sp=none;pct=100;rua=mailto:mina.azar@ittogether.com.au;ruf=mailto:mina.azar@ittogether.com.au;ri=86400;aspf=s;adkim=s;fo=1"
+},
+{
+"type": "TXT",
+"name": "_figma_sites_verify",
+"ttl": 3600,
+"value": "v=088829c9-d92d-4b7a-8e5f-e6d58f62c729"
+},
+{
+"type": "AAAA",
+"name": "backend",
+"ttl": 600,
+"value": "2a02:4780:59:1bc3::1"
+},
+{
+"type": "AAAA",
+"name": "staff",
+"ttl": 600,
+"value": "2a02:4780:59:1bc3::1"
+},
+{
+"type": "AAAA",
+"name": "www.backend",
+"ttl": 600,
+"value": "2a02:4780:59:1bc3::1"
+},
+{
+"type": "AAAA",
+"name": "www.staff",
+"ttl": 600,
+"value": "2a02:4780:59:1bc3::1"
+}
+]
