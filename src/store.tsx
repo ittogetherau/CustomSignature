@@ -1,5 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { BrandKit, Campaign, Employee, Organization, Role, Signature } from './types'
+import { DEFAULT_BRAND } from './lib/teamSignature'
+export { DEFAULT_BRAND }
 import { supabase } from './lib/supabase'
 import { uid } from './lib/templates'
 import { useToast } from './components/ui'
@@ -21,10 +23,6 @@ const toEmp = (e: Employee, orgId: string) => ({ id: e.id, org_id: orgId, full_n
 const fromCamp = (r: CampaignRow): Campaign => ({ ...r.data, id: r.id })
 const toCamp = (c: Campaign, orgId: string) => { const { id, ...data } = c; return { id, org_id: orgId, data } }
 
-export const DEFAULT_BRAND: BrandKit = {
-  company: '', website: '', logo: '', primary: '#0f766e', accent: '#e2643b', font: 'Helvetica, Arial, sans-serif',
-  address: '', phone: '', disclaimer: '', defaultTemplateId: 'aurora', socials: {},
-}
 
 // ---------- store ----------
 

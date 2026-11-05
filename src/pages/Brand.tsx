@@ -7,7 +7,7 @@ import type { BrandKit, Employee, SocialKey } from '../types'
 import { FONTS, SOCIAL_LABEL, renderSignature } from '../lib/render'
 import { TEMPLATES } from '../lib/templates'
 import { brandColors } from '../lib/io'
-import { employeeSignature } from './Team'
+import { employeeSignature } from '../lib/teamSignature'
 import { ColorInput, Field, PageHeader, SigThumb, Toggle, useToast } from '../components/ui'
 
 export default function Brand() {

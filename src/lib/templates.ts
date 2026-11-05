@@ -1,5 +1,5 @@
 import type { Signature, SignatureDesign, SignatureExtras, SignatureFields } from '../types'
-import { CLASSIC } from './classic'
+import { CLASSIC } from './classic.js'
 
 export interface TemplateMeta {
   id: string
