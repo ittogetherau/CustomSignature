@@ -20,7 +20,11 @@ export const maxDuration = 300
  * Inkwell keeps no standing Exchange admin access.
  */
 
-const EXO = 'https://outlook.office365.com/Exchange.Manage'
+// Exchange: request the app's configured delegated permissions (Exchange.Manage) via .default, exactly as
+// the Exchange Online PowerShell module does. A named scope like outlook.office365.com/Exchange.Manage gets
+// remapped to Microsoft Graph by Entra (AADSTS650053). .default here also consents Graph Domain.ReadWrite.All,
+// which is likewise configured on the app, in the same admin consent screen.
+const EXO = 'https://outlook.office365.com/.default'
 const GRAPH = 'https://graph.microsoft.com/Domain.ReadWrite.All'
 const GRAPH_API = 'https://graph.microsoft.com/v1.0'
 const RELAY_DOMAIN = () => process.env.RELAY_DOMAIN ?? 'relay.ittogether.com.au'
@@ -62,7 +66,7 @@ export async function POST(req: Request) {
         response_type: 'code',
         response_mode: 'query',
         redirect_uri: redirectUri(req),
-        scope: `openid profile offline_access ${EXO} ${GRAPH}`,
+        scope: `openid profile offline_access ${EXO}`,
         state,
         prompt: 'select_account',
       })
