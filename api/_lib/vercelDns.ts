@@ -38,9 +38,10 @@ export async function listRecords(name: string, type?: string) {
 }
 
 /** Create the record unless an identical one exists. */
-export async function ensureRecord(name: string, type: 'TXT' | 'A' | 'CNAME', value: string, ttl = 60) {
+export async function ensureRecord(name: string, type: 'TXT' | 'A' | 'AAAA' | 'CNAME', value: string, ttl = 60) {
   const existing = await listRecords(name, type)
-  const same = existing.find((r) => r.value === value)
+  const norm = (v: string) => (type === 'TXT' ? v : v.toLowerCase().replace(/\.$/, ''))
+  const same = existing.find((r) => norm(r.value) === norm(value))
   if (same) return same.id
   const r = await call<{ uid: string }>(`/v2/domains/${DNS_DOMAIN()}/records`, { method: 'POST', body: JSON.stringify({ name, type, value, ttl }) })
   return r.uid

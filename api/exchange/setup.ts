@@ -190,6 +190,10 @@ class Run {
           this.relay.code = randomBytes(5).toString('hex')
           this.relay.host = `${this.relay.code}.${RELAY_DOMAIN()}`
         }
+        // The host gets its own TXT record for Microsoft's domain check, and a name with any record of its
+        // own no longer matches the *.relay wildcard — so it needs explicit address records too.
+        await ensureRecord(relName(this.relay.host), 'A', process.env.RELAY_IPV4 ?? '109.105.218.120', 300)
+        await ensureRecord(relName(this.relay.host), 'AAAA', process.env.RELAY_IPV6 ?? '2a09:8280:1::1ea:c7d0:0', 300)
         return this.relay.host
       }
       case 'domain': {
@@ -279,7 +283,7 @@ class Run {
         return graph(token, `/domains/${this.relay.host}`, { method: 'DELETE' }).then(() => `Removed ${this.relay.host}`, (e) => (e.status === 404 ? 'Already gone' : Promise.reject(e)))
       }
       case 'dns': {
-        if (this.relay.host && process.env.VERCEL_TOKEN) await deleteRecords(relName(this.relay.host), 'TXT')
+        if (this.relay.host && process.env.VERCEL_TOKEN) for (const t of ['TXT', 'A', 'AAAA']) await deleteRecords(relName(this.relay.host), t)
         return 'Cleaned up'
       }
     }
