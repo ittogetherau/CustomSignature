@@ -58,19 +58,21 @@ export async function POST(req: Request) {
     if (!org?.ms_tenant_id) return json({ error: 'Connect Microsoft 365 first (Team → Connect Microsoft 365).' }, 409)
     const tenant = org.ms_tenant_id as string
 
+    // Step 1 — tenant-wide admin consent for every permission configured on the app (Exchange.Manage and
+    // Graph Domain.ReadWrite.All together). Removal skips it: consent already exists by then.
     if (body.action === 'start') {
       const purpose: Purpose = body.purpose === 'remove' ? 'remove' : 'setup'
       const state = signState({ o: org.id, u: user.id, p: purpose, exp: Date.now() + 20 * 60_000 })
-      const p = new URLSearchParams({
-        client_id: env('AZURE_CLIENT_ID'),
-        response_type: 'code',
-        response_mode: 'query',
-        redirect_uri: redirectUri(req),
-        scope: `openid profile offline_access ${EXO}`,
-        state,
-        prompt: 'select_account',
-      })
-      return json({ url: `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${p}` })
+      if (purpose === 'remove') return json({ url: authorizeUrl(req, tenant, state) })
+      const p = new URLSearchParams({ client_id: env('AZURE_CLIENT_ID'), redirect_uri: redirectUri(req), state })
+      return json({ url: `https://login.microsoftonline.com/${tenant}/adminconsent?${p}` })
+    }
+
+    // Step 2 — after consent, sign the admin in for a delegated token (code flow).
+    if (body.action === 'authorize') {
+      const st = readState(body.state)
+      if (!st || st.o !== org.id || st.u !== user.id) return json({ error: 'This sign-in link has expired. Start again from Mail routing.' }, 400)
+      return json({ url: authorizeUrl(req, tenant, body.state as string) })
     }
 
     if (body.action === 'callback') {
@@ -115,6 +117,19 @@ export async function POST(req: Request) {
 }
 
 const redirectUri = (req: Request) => `${appUrl(req)}/exchange/callback`
+
+function authorizeUrl(req: Request, tenant: string, state: string) {
+  const p = new URLSearchParams({
+    client_id: env('AZURE_CLIENT_ID'),
+    response_type: 'code',
+    response_mode: 'query',
+    redirect_uri: redirectUri(req),
+    scope: `openid profile offline_access ${EXO}`,
+    state,
+    prompt: 'select_account',
+  })
+  return `https://login.microsoftonline.com/${tenant}/oauth2/v2.0/authorize?${p}`
+}
 
 // ---------------------------------------------------------------- the runner
 

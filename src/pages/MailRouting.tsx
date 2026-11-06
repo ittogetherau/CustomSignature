@@ -427,6 +427,14 @@ export function ExchangeCallback() {
     once.current = true
     const msErr = params.get('error_description') || params.get('error')
     if (msErr) return setError(msErr.split(/\r?\n/)[0])
+    // Back from the admin-consent page: continue to the admin sign-in.
+    if (params.get('admin_consent')) {
+      if (params.get('admin_consent')?.toLowerCase() !== 'true') return setError('Admin approval was not granted.')
+      api(org.id, 'authorize', { state: params.get('state') })
+        .then(({ url }) => { if (url) location.href = url })
+        .catch((e) => setError((e as Error).message))
+      return
+    }
     api(org.id, 'callback', { code: params.get('code'), state: params.get('state') })
       .then(() => navigate('/mail-routing', { replace: true }))
       .catch((e) => setError((e as Error).message))
