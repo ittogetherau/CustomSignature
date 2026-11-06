@@ -240,3 +240,14 @@ describe('rewriteMessage', () => {
     expect(out.toString().match(/data-inkwell-sig/g)).toHaveLength(1);
   });
 });
+
+import { detectClientFromHtml } from '../src/rewrite.js';
+describe('detectClientFromHtml', () => {
+  it('recognises clients by their HTML fingerprints', () => {
+    expect(detectClientFromHtml('<div id="ms-outlook-mobile-signature">Get Outlook for iOS</div>')).toBe('outlook-mobile');
+    expect(detectClientFromHtml('<div class=WordSection1><p class=MsoNormal>Hi</p></div>')).toBe('outlook-desktop');
+    expect(detectClientFromHtml('<div dir="ltr" class="gmail_default">Hi</div>')).toBe('gmail');
+    expect(detectClientFromHtml('<div>Hi<br>Sent from my iPhone</div>')).toBe('apple-mail');
+    expect(detectClientFromHtml('<div class="elementToProof">Hi</div>')).toBe('other');
+  });
+});

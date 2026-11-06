@@ -52,6 +52,18 @@ export function detectClient(xMailer: string, userAgent: string): ClientKind {
   return 'other';
 }
 
+/**
+ * Exchange Online doesn't pass X-Mailer / User-Agent through the connector, so fall back to the
+ * fingerprints each client leaves in its HTML body.
+ */
+export function detectClientFromHtml(html: string): ClientKind {
+  if (/ms-outlook-mobile-signature|ms-outlook-(ios|android)|Get Outlook for (iOS|Android)/i.test(html)) return 'outlook-mobile';
+  if (/class\s*=\s*["']?[^"'>]*\bMsoNormal\b|WordSection1|urn:schemas-microsoft-com:office:word/i.test(html)) return 'outlook-desktop';
+  if (/class\s*=\s*["']?[^"'>]*\bgmail_(default|quote|signature|attr)\b/i.test(html)) return 'gmail';
+  if (/<blockquote[^>]+type\s*=\s*["']?cite|Sent from my (iPhone|iPad)|apple-content-edited|-webkit-line-break/i.test(html)) return 'apple-mail';
+  return 'other';
+}
+
 function insideAttachedMessage(node: MimeNode): boolean {
   let p = node.parentNode as MimeNode | false;
   while (p) {
@@ -151,6 +163,7 @@ export async function rewriteMessage(
       const original = Buffer.concat(chunks);
       try {
         const str = decodeCharset(original, node.charset);
+        if (isHtml && str !== null && result.client === 'other') result.client = detectClientFromHtml(str);
         const changed = str === null ? null : isHtml ? insertHtml(str, sig!.html) : insertText(str, sig!.text);
         if (changed === null) {
           if (str !== null) duplicate = true;
