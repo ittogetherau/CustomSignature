@@ -13,7 +13,7 @@ const NAV = [
   { to: '/campaigns', label: 'Banners & campaigns', icon: Megaphone },
   { to: '/insights', label: 'Insights', icon: BarChart3 },
   { to: '/brand', label: 'Brand kit', icon: Palette },
-  { to: '/mail-routing', label: 'Every device', icon: Send },
+  { to: '/mail-routing', label: 'Automated Mode', icon: Send },
   { to: '/settings', label: 'Settings', icon: Settings },
 ]
 
